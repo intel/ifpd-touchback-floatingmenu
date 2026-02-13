@@ -27,9 +27,6 @@ namespace TouchDataCaptureService
         private static volatile bool _serialThreadRunning = false;
         private static bool SendRawDataSerial = false;
 
-        // Configuration file path
-        private static readonly string ConfigFile = Path.Combine(AppContext.BaseDirectory, "config.txt");
-
         // ===================== CONSTANTS =====================
         private const int WM_INPUT = 0x00FF;
 
@@ -270,79 +267,6 @@ namespace TouchDataCaptureService
         private static bool _detailedHeaderWritten = false;
         private static bool _serialHeaderWritten = false;
 
-        // ===================== CONFIGURATION =====================
-        private static void LoadConfiguration()
-        {
-            try
-            {
-                if (File.Exists(ConfigFile))
-                {
-                    string[] lines = File.ReadAllLines(ConfigFile);
-                    foreach (string line in lines)
-                    {
-                        if (string.IsNullOrWhiteSpace(line) || line.StartsWith("#"))
-                            continue;
-
-                        string[] parts = line.Split('=', 2);
-                        if (parts.Length == 2)
-                        {
-                            string key = parts[0].Trim().ToUpper();
-                            string value = parts[1].Trim();
-
-                            switch (key)
-                            {
-                                case "COMPORT":
-                                case "SERIALPORT":
-                                    SerialPortName = value;
-                                    break;
-                            }
-                        }
-                    }
-                }
-                else
-                {
-                    // Create default config file
-                    CreateDefaultConfigFile();
-                }
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"Error loading configuration: {ex.Message}");
-                Debug.WriteLine("Using default settings.");
-            }
-        }
-
-        private static void CreateDefaultConfigFile()
-        {
-            try
-            {
-                string[] defaultConfig = {
-                    "# Touch Data Capture Service Configuration",
-                    "# Generated: " + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
-                    "#",
-                    "# Serial Port Configuration",
-                    "# Available ports can be found in Device Manager",
-                    "# Common values: COM1, COM2, COM3, COM4, COM5, etc.",
-                    "COMPORT=COM5",
-                    "#",
-                    "# Note: Baud rate has a default value of 921600",
-                    "#",
-                    "# Example configurations:",
-                    "# COMPORT=COM1",
-                    "# COMPORT=COM3",
-                    "# COMPORT=COM10",
-                    ""
-                };
-
-                File.WriteAllLines(ConfigFile, defaultConfig);
-                Debug.WriteLine($"Created default configuration file: {ConfigFile}");
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"Error creating default config file: {ex.Message}");
-            }
-        }
-
         private static void ProcessCommandLineArgs(string[] args)
         {
             for (int i = 0; i < args.Length; i++)
@@ -395,7 +319,6 @@ namespace TouchDataCaptureService
             Console.WriteLine("  -h, --help       Show this help message");
             Console.WriteLine();
             Console.WriteLine("Configuration:");
-            Console.WriteLine($"  Config file: {ConfigFile}");
             Console.WriteLine("  Baud rate: 921600 (default)");
             Console.WriteLine();
             Console.WriteLine("Examples:");
@@ -438,9 +361,6 @@ namespace TouchDataCaptureService
                 FreeConsole();
             }
 
-            // Load configuration from file
-            LoadConfiguration();
-
             // Process command line arguments (overrides config file)
             ProcessCommandLineArgs(args);
 
@@ -475,7 +395,6 @@ namespace TouchDataCaptureService
             Debug.WriteLine($"Detailed Log: {DetailedLogFile}");
             Debug.WriteLine($"Serial Log: {SerialLogFile}");
             Debug.WriteLine($"Serial Port: {SerialPortName} @ {SerialBaudRate} baud");
-            Debug.WriteLine($"Config File: {ConfigFile}");
             Debug.WriteLine("Touch the screen to see logs...\n");
 
             // Start serial reader thread
