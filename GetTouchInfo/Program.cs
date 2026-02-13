@@ -21,10 +21,11 @@ namespace TouchDataCaptureService
         // ===================== SERIAL CONFIGURATION =====================
         // Make these configurable - can be overridden by config file or command line
         private static string SerialPortName = "COM5"; // Default value
-        private static readonly int SerialBaudRate = 921600; // Changed to 921600
+        private static int SerialBaudRate = 921600; // Changed to 921600
         private static SerialPort? _serialPort;
         private static Thread? _serialReaderThread;
         private static volatile bool _serialThreadRunning = false;
+        private static bool SendRawDataSerial = false;
 
         // Configuration file path
         private static readonly string ConfigFile = Path.Combine(AppContext.BaseDirectory, "config.txt");
@@ -324,7 +325,7 @@ namespace TouchDataCaptureService
                     "# Common values: COM1, COM2, COM3, COM4, COM5, etc.",
                     "COMPORT=COM5",
                     "#",
-                    "# Note: Baud rate is fixed at 921600 in the application",
+                    "# Note: Baud rate has a default value of 921600",
                     "#",
                     "# Example configurations:",
                     "# COMPORT=COM1",
@@ -358,6 +359,18 @@ namespace TouchDataCaptureService
                             i++; // Skip next argument as it's the value
                         }
                         break;
+                    case "_BAUDRATE":
+                    case "--BAUDRATE":
+                        if (i + 1 < args.Length && int.TryParse(args[i + 1], out int baudRate))
+                        {
+                            SerialBaudRate = baudRate;
+                            i++; // Skip next argument as it's the value
+                        }
+                        break;
+                    case "-USERAW":
+                    case "--USERAW":
+                        SendRawDataSerial = true;
+                        break;
                     case "-H":
                     case "--HELP":
                         ShowHelp();
@@ -375,16 +388,22 @@ namespace TouchDataCaptureService
             Console.WriteLine("Options:");
             Console.WriteLine("  -port <COMx>     Set serial port (e.g., -port COM3)");
             Console.WriteLine("  --port <COMx>    Set serial port (e.g., --port COM3)");
+            Console.WriteLine(" -baudrate <Value> Set serial baudrate (e.g., -baudrate 9600");
+            Console.WriteLine(" --baudrate <Value> Set serial baudrate (e.g., --baudrate 9600");
+            Console.WriteLine(" -useraw Sends Raw data via serial. By default decoded data is being sent serially");
+            Console.WriteLine(" --useraw Sends Raw data via serial. By default decoded data is being sent serially");
             Console.WriteLine("  -h, --help       Show this help message");
             Console.WriteLine();
             Console.WriteLine("Configuration:");
             Console.WriteLine($"  Config file: {ConfigFile}");
-            Console.WriteLine("  Baud rate: 921600 (fixed)");
+            Console.WriteLine("  Baud rate: 921600 (default)");
             Console.WriteLine();
             Console.WriteLine("Examples:");
             Console.WriteLine("  TouchDataCaptureService.exe");
             Console.WriteLine("  TouchDataCaptureService.exe -port COM3");
             Console.WriteLine("  TouchDataCaptureService.exe --port COM10");
+            Console.WriteLine("  Pass multiple arguments as shown below: ");
+            Console.WriteLine("     TouchDataCaptureService.exe --port COM4 --baudrate 9600 --useraw");
         }
 
         // ===================== MAIN =====================
@@ -617,6 +636,21 @@ namespace TouchDataCaptureService
             }
         }
 
+        public static void SendTouchDataViaSerial(string rawData)
+        {
+            if (_serialPort != null && _serialPort.IsOpen)
+            {
+                try
+                {
+                    SendSerialData(rawData);
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"Failed to send touch data via serial: {ex.Message}");
+                }
+            }
+        }
+
         private static void CleanupSerial()
         {
             _serialThreadRunning = false;
@@ -824,6 +858,8 @@ namespace TouchDataCaptureService
                     string deviceName = deviceNames.GetValueOrDefault(header.hDevice, "UNKNOWN");
                     string raw = BitConverter.ToString(report);
                     LogRaw($"[RAW] Device:{deviceName} Size:{bytes} Data:{raw}");
+                    if (SendRawDataSerial)
+                        SendTouchDataViaSerial(raw);
                 }
 
                 // ---------- HID DECODING (WITH HEADERS) ----------
@@ -834,16 +870,19 @@ namespace TouchDataCaptureService
                     HidP_GetUsageValue(HIDP_REPORT_TYPE.HidP_Input, HID_USAGE_PAGE_DIGITIZER, 0,
                         HID_USAGE_DIGITIZER_CONTACT_COUNT, out contactCount,
                         preparsedData, dataPtr, (uint)bytes);
-                    for (ushort i = 0; i <= contactCount; i++)
+                    //Note:- Only the first record in Hid report generated will have 'Contact Count' Property
+                    for (ushort i = 1; i <= contactCount; i++)
                     {
                         var decoded = DecodeHIDReport(header.hDevice, dataPtr, (uint)bytes, i);
                         if (decoded.IsValid)
                         {
-                            LogDecoded($"[HID] {decoded.Summary}");
+                            var decodedLogString = (i != contactCount) ? $"[HID] {decoded.Summary}" : $"[HID] {decoded.Summary}\n";
+                            LogDecoded(decodedLogString);
                             LogDetailed(decoded);
 
                             // Send touch data via serial
-                            SendTouchDataViaSerial(decoded);
+                            if(!SendRawDataSerial)
+                                SendTouchDataViaSerial(decoded);
                         }
                         else
                         {
@@ -1040,22 +1079,29 @@ namespace TouchDataCaptureService
                 string deviceName = deviceNames.GetValueOrDefault(hDevice, "UNK");
                 summaryParts.Add($"Dev:{deviceName}");
 
-                if (result.ReportId > 0) summaryParts.Add($"RID:{result.ReportId}");
-                if (result.ContactCount > 0) summaryParts.Add($"CNT:{result.ContactCount}");
-
+                summaryParts.Add($"RID:{result.ReportId}");
+                summaryParts.Add($"CNT:{result.ContactCount}");
                 summaryParts.Add($"X:{result.X}");
                 summaryParts.Add($"Y:{result.Y}");
                 summaryParts.Add($"CID:{result.ContactId}");
                 summaryParts.Add($"TIP:{(result.TipSwitch ? 1 : 0)}");
 
-                if (result.InRange) summaryParts.Add("RNG:1");
-                if (result.Confidence) summaryParts.Add("CONF:1");
-                if (result.Pressure > 0) summaryParts.Add($"PRESS:{result.Pressure}");
-                if (result.Width > 0) summaryParts.Add($"W:{result.Width}");
-                if (result.Height > 0) summaryParts.Add($"H:{result.Height}");
-                if (result.Azimuth > 0) summaryParts.Add($"AZ:{result.Azimuth}");
-                if (result.Altitude > 0) summaryParts.Add($"ALT:{result.Altitude}");
-                if (result.Twist > 0) summaryParts.Add($"TWIST:{result.Twist}");
+                if(result.InRange) 
+                    summaryParts.Add("RNG:1");
+                else
+                    summaryParts.Add("RNG:0");
+
+                if (result.Confidence) 
+                    summaryParts.Add("CONF:1");
+                else
+                    summaryParts.Add("CONF:0");
+
+                summaryParts.Add($"PRESS:{result.Pressure}");
+                summaryParts.Add($"W:{result.Width}");
+                summaryParts.Add($"H:{result.Height}");
+                summaryParts.Add($"AZ:{result.Azimuth}");
+                summaryParts.Add($"ALT:{result.Altitude}");
+                summaryParts.Add($"TWIST:{result.Twist}");
 
                 result.IsValid = true;
                 result.Summary = string.Join(" ", summaryParts);
