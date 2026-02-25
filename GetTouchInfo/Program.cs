@@ -20,7 +20,7 @@ namespace TouchDataCaptureService
 
         // ===================== SERIAL CONFIGURATION =====================
         // Make these configurable - can be overridden by config file or command line
-        private static string SerialPortName = "COM5"; // Default value
+        private static string SerialPortName = "COM7"; // Default value
         private static int SerialBaudRate = 921600; // Changed to 921600
         private static SerialPort? _serialPort;
         private static Thread? _serialReaderThread;
@@ -419,14 +419,16 @@ namespace TouchDataCaptureService
                     ReadTimeout = 1000,
                     WriteTimeout = 1000,
                     Handshake = Handshake.None,
-                    DtrEnable = true,
-                    RtsEnable = true
+                    DtrEnable = false,   
+                    RtsEnable = false  
                 };
 
                 _serialPort.Open();
-                Debug.WriteLine($"Serial port {SerialPortName} opened successfully at {SerialBaudRate} baud");
+                Debug.WriteLine($"[Serial] Opened {SerialPortName} @ {SerialBaudRate}");
 
-                // Write serial log header
+                // Give ESP32 time to finish booting TinyUSB before first touch event arrives
+                Thread.Sleep(2000);
+
                 WriteSerialLogHeader();
             }
             catch (Exception ex)
@@ -544,14 +546,41 @@ namespace TouchDataCaptureService
             {
                 try
                 {
-                    // Create a compact touch data message for serial transmission
-                    string message = $"TOUCH,{touchData.X},{touchData.Y},{touchData.ContactId},{(touchData.TipSwitch ? 1 : 0)},{touchData.Pressure}";
+                    // touchData.X and touchData.Y are already in HID logical coordinates (0-32767)
+                    // Send them directly - resolution independent!
+                    int hidX = Math.Clamp(touchData.X, 0, 32767);
+                    int hidY = Math.Clamp(touchData.Y, 0, 32767);
+
+                    // Send all decoded fields
+                    // Format: TOUCH,x,y,cid,tip,pressure,inrange,confidence,width,height,azimuth,altitude,twist,contactcount
+                    string message = string.Format(
+                        "TOUCH,{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12}",
+                        hidX,                           // 0: X (raw HID coords)
+                        hidY,                           // 1: Y (raw HID coords)
+                        touchData.ContactId,            // 2: Contact ID
+                        touchData.TipSwitch ? 1 : 0,   // 3: Tip Switch
+                        touchData.Pressure,             // 4: Pressure
+                        touchData.InRange ? 1 : 0,      // 5: In Range
+                        touchData.Confidence ? 1 : 0,   // 6: Confidence
+                        touchData.Width,                // 7: Width
+                        touchData.Height,               // 8: Height
+                        touchData.Azimuth,              // 9: Azimuth
+                        touchData.Altitude,             // 10: Altitude
+                        touchData.Twist,                // 11: Twist
+                        touchData.ContactCount          // 12: Contact Count
+                    );
+
+                    Console.WriteLine($"TX → {message}");
                     SendSerialData(message);
                 }
                 catch (Exception ex)
                 {
                     Debug.WriteLine($"Failed to send touch data via serial: {ex.Message}");
                 }
+            }
+            else
+            {
+                Debug.WriteLine($"❌ Serial not ready or touch data invalid");
             }
         }
 
