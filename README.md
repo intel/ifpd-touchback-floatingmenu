@@ -1,10 +1,10 @@
-<<<<<<< HEAD
 | Supported Targets | ESP32-P4 | ESP32-S2 | ESP32-S3 |
 | ----------------- | -------- | -------- | -------- |
 
-# TinyUSB Human Interface Device Example
+# ifpd-touch-back
+To enable reverse touch / touch back feature in IA only IFPD
 
-(See the README.md file in the upper level 'examples' directory for more information about examples.)
+## TinyUSB Human Interface Device Example
 
 Human interface devices (HID) are one of the most common USB devices, it is implemented in various devices such as keyboards, mice, game controllers, sensors and alphanumeric display devices.
 In this example, we implement USB keyboard and mouse.
@@ -79,7 +79,5 @@ I (480) example: USB initialization DONE
 I (2490) example: Sending Keyboard report
 I (3040) example: Sending Mouse report
 ```
-=======
-# ifpd-touch-back
-To enable reverse touch / touch back feature in only IA based IFPD
->>>>>>> 78bb8bcdb5cf74bd2fd33a837cd97e19926f4815
+
+
