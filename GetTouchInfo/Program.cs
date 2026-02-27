@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics;
-using System.Runtime.InteropServices;
 using System.IO.Ports;
+using System.Reflection.PortableExecutable;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace TouchDataCaptureService
@@ -31,17 +32,23 @@ namespace TouchDataCaptureService
         private static class CoordinateScaler
         {
             private static int _minX = 0;
-            private static int _maxX = 30735;
+            private static int _maxX = int.MaxValue;
             private static int _minY = 0;
-            private static int _maxY = 17295;
+            private static int _maxY = int.MaxValue;
             private static int _samplesCount = 0;
             private static readonly int MinSamplesForScaling = 10;
             private static readonly object _scalingLock = new object();
 
-            public static (int scaledX, int scaledY) ScaleCoordinates(int rawX, int rawY)
+            public static (int scaledX, int scaledY) ScaleCoordinates(int rawX, int rawY, IntPtr hDevice)
             {
                 lock (_scalingLock)
                 {
+                    var logicalRanges = GetHidLogicalRanges(hDevice);
+                    _minX = logicalRanges["X"].min;
+                    _maxX = logicalRanges["X"].max;
+                    _minY = logicalRanges["Y"].min;
+                    _maxY = logicalRanges["Y"].max;
+
                     // Update coordinate bounds
                     _minX = Math.Min(_minX, rawX);
                     _maxX = Math.Max(_maxX, rawX);
@@ -214,6 +221,65 @@ namespace TouchDataCaptureService
             public RID_DEVICE_INFO_HID hid;
         }
 
+        [StructLayout(LayoutKind.Sequential)]
+        private struct HIDP_CAPS
+        {
+            public ushort Usage;
+            public ushort UsagePage;
+            public ushort InputReportByteLength;
+            public ushort OutputReportByteLength;
+            public ushort FeatureReportByteLength;
+            [MarshalAs(UnmanagedType.ByValArray, SizeConst = 17)]
+            public ushort[] Reserved;
+            public ushort NumberLinkCollectionNodes;
+            public ushort NumberInputButtonCaps;
+            public ushort NumberInputValueCaps;
+            public ushort NumberInputDataIndices;
+            public ushort NumberOutputButtonCaps;
+            public ushort NumberOutputValueCaps;
+            public ushort NumberOutputDataIndices;
+            public ushort NumberFeatureButtonCaps;
+            public ushort NumberFeatureValueCaps;
+            public ushort NumberFeatureDataIndices;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct HIDP_VALUE_CAPS
+        {
+            public ushort UsagePage;
+            public byte ReportID;
+            public byte IsAlias;
+            public ushort BitField;
+            public ushort LinkCollection;
+            public ushort LinkUsage;
+            public ushort LinkUsagePage;
+            public byte IsRange;
+            public byte IsStringRange;
+            public byte IsDesignatorRange;
+            public byte IsAbsolute;
+            public byte HasNull;
+            public byte Reserved;
+            public ushort BitSize;
+            public ushort ReportCount;
+            [MarshalAs(UnmanagedType.ByValArray, SizeConst = 5)]
+            public ushort[] Reserved2;
+            public uint UnitsExp;
+            public uint Units;
+            public int LogicalMin;
+            public int LogicalMax;
+            public int PhysicalMin;
+            public int PhysicalMax;
+            // Union for Range/NotRange - simplified for this example
+            public ushort UsageMin;
+            public ushort UsageMax;
+            public ushort StringMin;
+            public ushort StringMax;
+            public ushort DesignatorMin;
+            public ushort DesignatorMax;
+            public ushort DataIndexMin;
+            public ushort DataIndexMax;
+        }
+
         // ===================== DECODED TOUCH DATA =====================
         public class DecodedTouchData
         {
@@ -310,6 +376,17 @@ namespace TouchDataCaptureService
 
         [DllImport("kernel32.dll", SetLastError = true)]
         private static extern IntPtr GetConsoleWindow();
+
+        [DllImport("hid.dll", SetLastError = true)]
+        private static extern uint HidP_GetCaps(IntPtr preparsedData, out HIDP_CAPS capabilities);
+
+        [DllImport("hid.dll", SetLastError = true)]
+        private static extern uint HidP_GetValueCaps(
+            HIDP_REPORT_TYPE reportType,
+            [In, Out] HIDP_VALUE_CAPS[] valueCaps,
+            ref ushort valueCapsLength,
+            IntPtr preparsedData);
+
 
         private const uint ERROR_SUCCESS = 0;
 
@@ -619,14 +696,14 @@ namespace TouchDataCaptureService
             }
         }
 
-        public static void SendTouchDataViaSerial(DecodedTouchData touchData)
+        public static void SendTouchDataViaSerial(DecodedTouchData touchData,IntPtr hDevice)
         {
             if (_serialPort != null && _serialPort.IsOpen && touchData.IsValid)
             {
                 try
                 {
                     // Apply dynamic coordinate scaling to normalize coordinates to HID range (0-32767)
-                    var (hidX, hidY) = CoordinateScaler.ScaleCoordinates(touchData.X, touchData.Y);
+                    var (hidX, hidY) = CoordinateScaler.ScaleCoordinates(touchData.X, touchData.Y, hDevice);
 
                     // Send all decoded fields
                     // Format: TOUCH,x,y,cid,tip,pressure,inrange,confidence,width,height,azimuth,altitude,twist,contactcount
@@ -920,7 +997,7 @@ namespace TouchDataCaptureService
 
                             // Send touch data via serial
                             if (!SendRawDataSerial)
-                                SendTouchDataViaSerial(decoded);
+                                SendTouchDataViaSerial(decoded, header.hDevice);
                         }
                         else
                         {
@@ -1375,6 +1452,72 @@ namespace TouchDataCaptureService
             }
 
             Debug.WriteLine($"Serial: {line}");
+        }
+
+        private static Dictionary<string, (int min, int max)> GetHidLogicalRanges(IntPtr hDevice)
+        {
+            var result = new Dictionary<string, (int min, int max)>();
+
+            if (!devicePreparsedData.ContainsKey(hDevice))
+            {
+                Console.WriteLine("No preparsed data available for device");
+                return result;
+            }
+
+            IntPtr preparsedData = devicePreparsedData[hDevice];
+
+            try
+            {
+                // Get device capabilities
+                if (HidP_GetCaps(preparsedData, out HIDP_CAPS caps) != HIDP_STATUS_SUCCESS)
+                {
+                    Console.WriteLine("Failed to get HID capabilities");
+                    return result;
+                }
+
+                Console.WriteLine($"Device has {caps.NumberInputValueCaps} input value capabilities");
+
+                // Get input value capabilities
+                if (caps.NumberInputValueCaps > 0)
+                {
+                    HIDP_VALUE_CAPS[] valueCaps = new HIDP_VALUE_CAPS[caps.NumberInputValueCaps];
+                    ushort valueCapLength = caps.NumberInputValueCaps;
+
+                    if (HidP_GetValueCaps(HIDP_REPORT_TYPE.HidP_Input, valueCaps, ref valueCapLength, preparsedData) == HIDP_STATUS_SUCCESS)
+                    {
+                        for (int i = 0; i < valueCapLength; i++)
+                        {
+                            var cap = valueCaps[i];
+                            string propertyName = GetPropertyName(cap.UsagePage, cap.UsageMin);
+                            result[propertyName] = (cap.LogicalMin, cap.LogicalMax);
+
+                            Console.WriteLine($"HID Property: {propertyName} = {cap.LogicalMin} to {cap.LogicalMax}");
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error getting HID logical ranges: {ex.Message}");
+            }
+
+            return result;
+        }
+
+        private static string GetPropertyName(ushort usagePageId, ushort usageId)
+        {
+            // Common HID usage pages and IDs for touch devices
+            return (usagePageId, usageId) switch
+            {
+                (0x01, 0x30) => "X",
+                (0x01, 0x31) => "Y",
+                (0x0D, 0x30) => "Pressure",
+                (0x0D, 0x48) => "ContactWidth",
+                (0x0D, 0x49) => "ContactHeight",
+                (0x0D, 0x51) => "ContactID",
+                (0x0D, 0x42) => "TipSwitch",
+                _ => $"Usage_{usagePageId:X4}_{usageId:X4}"
+            };
         }
 
         // ===================== CLEANUP =====================
