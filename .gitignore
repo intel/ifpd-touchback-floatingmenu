@@ -497,3 +497,4 @@ FodyWeavers.xsd
 *.msm
 *.msp
 >>>>>>> 78bb8bcdb5cf74bd2fd33a837cd97e19926f4815
+.vscode/ 
