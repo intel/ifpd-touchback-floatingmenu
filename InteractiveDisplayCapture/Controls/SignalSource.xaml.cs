@@ -12,6 +12,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
+using ListBox = System.Windows.Controls.ListBox;
 using MessageBox = System.Windows.MessageBox;
 
 namespace InteractiveDisplayCapture.Controls
@@ -36,8 +37,25 @@ namespace InteractiveDisplayCapture.Controls
             get => _selectedDevice;
             set
             {
-                if (_selectedDevice == value)
+                //if (_selectedDevice == value)
+                //    return;
+                if (value == null)
                     return;
+
+                // Clicking SAME device again
+                if (_selectedDevice == value)
+                {
+                    if (_selectedDevice.Status == DeviceStatusEnum.Connected)
+                    {
+                        // Turn back to Available (Blue)
+                        _selectedDevice.Status = DeviceStatusEnum.Available;
+
+                        // Close camera
+                        DeviceSelected?.Invoke(-1);
+                    }
+
+                    return;
+                }
 
                 // Reset old device (if it was connected)
                 if (_selectedDevice != null &&
@@ -53,7 +71,7 @@ namespace InteractiveDisplayCapture.Controls
                     _selectedDevice.Status == DeviceStatusEnum.Available)
                 {
                     _selectedDevice.Status = DeviceStatusEnum.Connected;
-
+                    
                     //  StartCamera(0); // For now using index 0
 
                     // OpenCameraWindow();
@@ -62,6 +80,7 @@ namespace InteractiveDisplayCapture.Controls
                 }
 
                 OnPropertyChanged();
+              
             }
         }
         public SignalSource()
@@ -297,6 +316,43 @@ namespace InteractiveDisplayCapture.Controls
         protected void OnPropertyChanged([CallerMemberName] string name = null)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+        }
+
+        private void DeviceList_PreviewMouseLeftButtonUp(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            if(sender is ListBox listBox)
+            {
+                var item = ItemsControl.ContainerFromElement(listBox, e.OriginalSource as DependencyObject) as ListBoxItem;
+
+                if (item?.DataContext is SignalSourceModel device)
+                {
+                    ToggleDevice(device);
+                }
+
+            }
+        }
+
+        private void ToggleDevice(SignalSourceModel device)
+        {
+            if (device.Status == DeviceStatusEnum.Available)
+            {
+                // Disconnect any previously connected device
+                foreach (var d in Devices)
+                {
+                    if (d.Status == DeviceStatusEnum.Connected)
+                        d.Status = DeviceStatusEnum.Available;
+                }
+
+                device.Status = DeviceStatusEnum.Connected;
+
+                DeviceSelected?.Invoke(0); // Open camera
+            }
+            else if (device.Status == DeviceStatusEnum.Connected)
+            {
+                device.Status = DeviceStatusEnum.Available;
+
+                DeviceSelected?.Invoke(-1); // Close camera
+            }
         }
     }
 }

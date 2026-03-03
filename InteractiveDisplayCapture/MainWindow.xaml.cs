@@ -173,6 +173,10 @@ namespace InteractiveDisplayCapture
                 _signalSourcePage = new SignalSource();
                 _signalSourcePage.DeviceSelected += OpenCameraWindow;
             }
+            if(_cameraWindow == null)
+            {
+
+            }
             ShowFlyout(_signalSourcePage);
            
         }
@@ -212,6 +216,11 @@ namespace InteractiveDisplayCapture
 
         private void OpenCameraWindow(int index)
         {
+            if (index == -1)
+            {
+                CloseCameraWindow();
+                return;
+            }
             if (_cameraWindow != null)
                 return;
 
@@ -236,27 +245,27 @@ namespace InteractiveDisplayCapture
             //    _cameraWindow.Activate();
             //}
         }
-
+        private bool _cameraClosedManually = false;
         private void OnCameraClosed()
         {
-            Dispatcher.Invoke(() =>
-            {
-                _cameraWindow = null;
+            //Dispatcher.Invoke(() =>
+            //{
+            //    _cameraWindow = null;
 
-                // Open menu
-                ToggleMenu();
+            //    // Open menu
+            //    ToggleMenu();
 
-                // Only create a new SignalSource if you want fresh page
-                // Comment out these lines to persist previous selection
-                // var newSignalSource = new SignalSource();
-                // ShowFlyout(newSignalSource);
+            //    // Only create a new SignalSource if you want fresh page
+            //    // Comment out these lines to persist previous selection
+            //    // var newSignalSource = new SignalSource();
+            //    // ShowFlyout(newSignalSource);
 
-                // Instead, reuse existing SignalSource
-                if (_signalSourcePage != null)
-                {
-                    ShowFlyout(_signalSourcePage);
-                }
-            });
+            //    // Instead, reuse existing SignalSource
+            //    if (_signalSourcePage != null)
+            //    {
+            //        ShowFlyout(_signalSourcePage);
+            //    }
+            //});
 
             //Dispatcher.Invoke(() =>
             //{
@@ -269,6 +278,23 @@ namespace InteractiveDisplayCapture
             //    var newSignalSource = new SignalSource();
             //    ShowFlyout(newSignalSource);
             //});
+
+            Dispatcher.Invoke(() =>
+            {
+                _cameraWindow = null;
+                _cameraClosedManually = true;
+                _menuOpen = false;
+                ToggleMenu();
+
+                if (_cameraClosedManually)
+                {
+                    _signalSourcePage = new SignalSource();
+                    _signalSourcePage.DeviceSelected += OpenCameraWindow;
+                    _cameraClosedManually = false;
+                }
+
+                ShowFlyout(_signalSourcePage);
+            });
         }
 
         private void CloseCameraIfOpen()

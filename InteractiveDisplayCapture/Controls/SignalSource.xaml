@@ -245,8 +245,9 @@
                 <Separator Margin="0,0,0,10" Background="White"/>
 
                 <!-- Device List -->
-                <ListBox ItemsSource="{Binding Devices}"
-                     SelectedItem="{Binding SelectedDevice}"
+                <ListBox x:Name="DeviceList"
+                    ItemsSource="{Binding Devices}"
+                    PreviewMouseLeftButtonUp="DeviceList_PreviewMouseLeftButtonUp"
                      ItemContainerStyle="{StaticResource DeviceListBoxItemStyle}"
                      ItemTemplate="{StaticResource DeviceItemTemplate}"
                      Background="Transparent"
