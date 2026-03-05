@@ -110,15 +110,11 @@ static void usb_hid_task(void *arg)
 
     for (;;)
     {
-        // Block until at least one message arrives
-        if (xQueueReceive(line_queue, line, portMAX_DELAY) == pdTRUE)
-        {
-            parse_touch(line);
+        xQueueReceive(line_queue, line, portMAX_DELAY);
+        parse_touch(line);
 
-            // Drain any remaining messages without blocking
-            while (xQueueReceive(line_queue, line, 0) == pdTRUE)
-                parse_touch(line);
-        }
+        while (xQueueReceive(line_queue, line, 0) == pdTRUE)
+            parse_touch(line);
     }
 }
 
@@ -141,6 +137,6 @@ void app_main(void)
 
     ESP_LOGI(TAG, "Ready. Waiting for TOUCH commands on UART...");
 
-    xTaskCreate(uart_rx_task, "uart_rx",  4096, NULL, 6, NULL);
+    xTaskCreate(uart_rx_task, "uart_rx",  4096, NULL, 5, NULL);
     xTaskCreate(usb_hid_task, "usb_hid", 4096, NULL, 5, NULL);
 }
