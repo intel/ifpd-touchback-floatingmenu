@@ -2,6 +2,7 @@
 #include <string.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "freertos/queue.h"
 #include "driver/uart.h"
 #include "esp_log.h"
 #include "tusb.h"
@@ -54,14 +55,66 @@ void parse_touch(char *line)
         if (x > HID_MAX) x = HID_MAX;
         if (y > HID_MAX) y = HID_MAX;
 
-        ESP_LOGI(TAG, "Touch: hid=(%d,%d) cid=%d tip=%d press=%d",
-                 x, y, cid, tip, pressure);
+        // ESP_LOGI(TAG, "Touch: hid=(%d,%d) cid=%d tip=%d press=%d",
+        //           x, y, cid, tip, pressure);
 
         hid_touch_send(x, y, cid, tip, pressure);
     }
-    else
+    // else
+    // {
+    //     ESP_LOGW(TAG, "Parse failed: [%s]", line);
+    // }
+}
+
+static QueueHandle_t line_queue;
+
+// Task 1: Read UART bytes, assemble lines, push complete lines to the queue
+static void uart_rx_task(void *arg)
+{
+    uint8_t data[BUF_SIZE];
+    char    line[BUF_SIZE];
+    int     line_len = 0;
+
+    for (;;)
     {
-        ESP_LOGW(TAG, "Parse failed: [%s]", line);
+        int len = uart_read_bytes(UART_PORT, data, BUF_SIZE - 1,
+                                  pdMS_TO_TICKS(20));
+        if (len <= 0) continue;
+
+        for (int i = 0; i < len; i++)
+        {
+            char c = (char)data[i];
+            if (c == '\n')
+            {
+                line[line_len] = '\0';
+                if (line_len > 0)
+                    xQueueSend(line_queue, line, 0); // non-blocking; drop if full
+                line_len = 0;
+            }
+            else if (c != '\r')
+            {
+                if (line_len < BUF_SIZE - 1)
+                    line[line_len++] = c;
+                else
+                    line_len = 0;  // overflow — discard
+            }
+        }
+    }
+}
+
+// Task 2: Dequeue lines and send USB HID touch reports
+// Drains all pending messages before blocking again
+static void usb_hid_task(void *arg)
+{
+    char line[BUF_SIZE];
+
+    for (;;)
+    {
+        xQueueReceive(line_queue, line, portMAX_DELAY);
+        parse_touch(line);
+
+        while (xQueueReceive(line_queue, line, 0) == pdTRUE)
+            parse_touch(line);
     }
 }
 
@@ -78,34 +131,12 @@ void app_main(void)
 
     ESP_ERROR_CHECK(tinyusb_driver_install(&tusb_cfg));
 
+    // Create queue BEFORE tasks so it is ready when tasks start
+    line_queue = xQueueCreate(16, BUF_SIZE);
+    configASSERT(line_queue);
+
     ESP_LOGI(TAG, "Ready. Waiting for TOUCH commands on UART...");
 
-    uint8_t data[BUF_SIZE];
-    char    line[BUF_SIZE];
-    int     line_len = 0;
-
-    while (1)
-    {
-        int len = uart_read_bytes(UART_PORT, data, BUF_SIZE - 1,
-                                  pdMS_TO_TICKS(20));
-        if (len <= 0) continue;
-
-        for (int i = 0; i < len; i++)
-        {
-            char c = (char)data[i];
-            if (c == '\n')
-            {
-                line[line_len] = '\0';
-                if (line_len > 0) parse_touch(line);
-                line_len = 0;
-            }
-            else if (c != '\r')
-            {
-                if (line_len < BUF_SIZE - 1)
-                    line[line_len++] = c;
-                else
-                    line_len = 0;  // overflow — discard
-            }
-        }
-    }
+    xTaskCreate(uart_rx_task, "uart_rx",  4096, NULL, 5, NULL);
+    xTaskCreate(usb_hid_task, "usb_hid", 4096, NULL, 5, NULL);
 }
