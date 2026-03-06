@@ -43,8 +43,8 @@
                                     Value="0,25,25,0"/>
 
                             <Setter TargetName="Bg"
-            Property="Margin"
-            Value="-5,0,0,0"/>
+                                    Property="Margin"
+                                    Value="-5,0,0,0"/>
                         </Trigger>
 
                         <!-- Selected -->
@@ -53,15 +53,13 @@
                                 Property="Background"
                                 Value="#1565C0"/>
 
-                            <!-- ?? Make left flat, right rounded -->
                             <Setter TargetName="Bg"
                                 Property="CornerRadius"
                                 Value="0,25,25,0"/>
 
                             <Setter TargetName="Bg"
-Property="Margin"
-Value="-5,0,0,0"/>
-                            <!-- ?? Stretch a little to the left -->
+                                    Property="Margin"
+                                    Value="-5,0,0,0"/>
                             <Setter Property="HorizontalContentAlignment"
                                 Value="Left"/>
                         </Trigger>
@@ -71,144 +69,5 @@ Value="-5,0,0,0"/>
             </Setter.Value>
         </Setter>
     </Style>
-
-
-    <!--<Style x:Key="NavIconItemStyle" TargetType="ListBoxItem">
-        <Setter Property="Width" Value="60"/>
-        <Setter Property="Height" Value="60"/>
-        <Setter Property="Margin" Value="0,8"/>
-        <Setter Property="HorizontalContentAlignment" Value="Center"/>
-        <Setter Property="VerticalContentAlignment" Value="Center"/>
-        <Setter Property="Background" Value="Transparent"/>
-        <Setter Property="BorderThickness" Value="0"/>
-        <Setter Property="Template">
-            <Setter.Value>
-                <ControlTemplate TargetType="ListBoxItem">
-                    <Grid HorizontalAlignment="Center"
-                      VerticalAlignment="Center">
-
-                        --><!-- Rounded background --><!--
-                        <Border x:Name="Bg"
-                            Width="50"
-                            Height="50"
-                            CornerRadius="12"
-                            Background="Transparent">
-
-                            <ContentPresenter
-                            HorizontalAlignment="Center"
-                            VerticalAlignment="Center"/>
-                        </Border>
-                    </Grid>
-
-                    <ControlTemplate.Triggers>
-
-                        --><!-- Hover --><!--
-                        <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="Bg"
-                                Property="Background"
-                                Value="#2F6EA5"/>
-                        </Trigger>
-
-                        --><!-- Selected --><!--
-                        <Trigger Property="IsSelected" Value="True">
-                            <Setter TargetName="Bg"
-                                Property="Background"
-                                Value="#1F5C8B"/>
-                        </Trigger>
-
-                    </ControlTemplate.Triggers>
-                </ControlTemplate>
-            </Setter.Value>
-        </Setter>
-    </Style>-->
-
-
-    <!--<Style x:Key="NavIconItemStyle" TargetType="ListBoxItem">
-        <Setter Property="Height" Value="50"/>
-        <Setter Property="Width" Value="50"/>
-        <Setter Property="Margin" Value="0,8,0,8"/>
-        <Setter Property="HorizontalContentAlignment" Value="Center"/>
-        <Setter Property="VerticalContentAlignment" Value="Center"/>
-        <Setter Property="Padding" Value="0"/>
-        <Setter Property="Template">
-            <Setter.Value>
-                <ControlTemplate TargetType="ListBoxItem">
-                    <Grid HorizontalAlignment="Center">
-                        <Border x:Name="Bg"
-                            Width="50"
-                            Height="50"
-                            CornerRadius="18"
-                                Margin="0,0,0,0"
-                            Background="Transparent">
-                            <ContentPresenter
-                            HorizontalAlignment="Center"
-                            VerticalAlignment="Center"/>
-                        </Border>
-                    </Grid>
-
-                    <ControlTemplate.Triggers>
-                        <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="Bg"
-                                Property="Background"
-                                Value="#406E8E"/>
-
-                            <Setter TargetName="Bg"
-     Property="Margin"
-     Value="0,0,0,0"/>
-                        </Trigger>
-
-                        <Trigger Property="IsSelected" Value="True">
-                            <Setter TargetName="Bg"
-                                Property="Background"
-                                Value="#1F4E6B"/>
-                        </Trigger>
-                    </ControlTemplate.Triggers>
-                </ControlTemplate>
-            </Setter.Value>
-        </Setter>
-    </Style>-->
-    
-    
-
-    <!--<Style x:Key="NavIconItemStyle" TargetType="ListBoxItem">
-        <Setter Property="Height" Value="40"/>
-        <Setter Property="HorizontalContentAlignment" Value="Center"/>
-        <Setter Property="VerticalContentAlignment" Value="Center"/>
-        <Setter Property="Padding" Value="0"/>
-        <Setter Property="Margin" Value="0"/>
-        <Setter Property="Template">
-            <Setter.Value>
-                <ControlTemplate TargetType="ListBoxItem">
-                    <Grid>
-                        <Border x:Name="Bg"
-                            Background="Transparent"
-                            CornerRadius="8"
-                            Margin="5">
-
-                            <ContentPresenter
-                            HorizontalAlignment="Center"
-                            VerticalAlignment="Center"/>
-                        </Border>
-                    </Grid>
-
-                    <ControlTemplate.Triggers>
-
-                        <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="Bg"
-                                Property="Background"
-                                Value="#406E8E"/>
-                        </Trigger>
-
-                        <Trigger Property="IsSelected" Value="True">
-                            <Setter TargetName="Bg"
-                                Property="Background"
-                                Value="#1F4E6B"/>
-                        </Trigger>
-
-                    </ControlTemplate.Triggers>
-                </ControlTemplate>
-            </Setter.Value>
-        </Setter>
-    </Style>-->
-
+  
 </ResourceDictionary>

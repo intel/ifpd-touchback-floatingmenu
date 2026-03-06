@@ -1,17 +1,5 @@
-﻿using InteractiveDisplayCapture.Helpers;
-using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
+﻿using System.Windows;
 using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
-using MessageBox = System.Windows.MessageBox;
 using MouseEventArgs = System.Windows.Input.MouseEventArgs;
 using Point = System.Windows.Point;
 using UserControl = System.Windows.Controls.UserControl;
@@ -24,9 +12,6 @@ namespace InteractiveDisplayCapture.Controls
     public partial class EdgeHandleControl : UserControl
     {
         private bool _isDragging;
-        private Point _startPoint;
-
-
         private Point _startMousePosition;
         private double _startTop;
         // Declare event
@@ -76,63 +61,6 @@ namespace InteractiveDisplayCapture.Controls
         {
             _isDragging = false;
             Mouse.Capture(null);
-
-         
         }
-
-    
-        //private void OnMouseDown(object sender, MouseButtonEventArgs e)
-        //{
-        //    var window = Window.GetWindow(this);
-        //    if (window == null) return;
-
-        //    _isDragging = true;
-        //    _startPoint = e.GetPosition(window);
-        //    Mouse.Capture((UIElement)sender);
-        //}
-
-        //private void OnMouseMove(object sender, MouseEventArgs e)
-        //{
-        //    if (!_isDragging) return;
-
-        //    var window = Window.GetWindow(this);
-        //    if (window == null) return;
-
-        //    Point currentPoint = e.GetPosition(window);
-        //    double deltaY = currentPoint.Y - _startPoint.Y;
-
-        //    Rect workArea = SystemParameters.WorkArea;
-
-        //    double newTop = window.Top + deltaY;
-        //    newTop = Math.Max(workArea.Top,
-        //             Math.Min(newTop, workArea.Bottom - window.Height));
-
-        //    window.Top = newTop;
-        //    window.Left = workArea.Left; // lock to left edge
-
-        //    _startPoint = currentPoint; // 🔑 critical
-        //}
-
-        //private void OnMouseUp(object sender, MouseButtonEventArgs e)
-        //{
-        //    _isDragging = false;
-        //    Mouse.Capture(null);
-        //}
-
-
-        //private void EdgeButton_Click(object sender, RoutedEventArgs e)
-        //{
-        //    EdgeButtonClicked?.Invoke();
-        //}
-
-
-
-        //private void EdgeButton_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
-        //{
-        //    if (e.ButtonState == MouseButtonState.Pressed)
-        //    {
-        //        this.DragMove();
-        //    }
-        //}
     }
 }

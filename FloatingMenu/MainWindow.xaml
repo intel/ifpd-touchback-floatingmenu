@@ -56,10 +56,6 @@
             <!-- Flyout Panel -->
         </Grid.ColumnDefinitions>
 
-      
-        <!-- Main Content -->
-        <Frame x:Name="MainFrame"/>
-
         <!-- Overlay Menu -->
         <Controls:EdgeMenuControl x:Name="EdgeMenu" 
                                   Margin="0,0,15,0"
