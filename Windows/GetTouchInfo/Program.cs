@@ -21,7 +21,7 @@ namespace TouchDataCaptureService
 
         // ===================== SERIAL CONFIGURATION =====================
         // Make these configurable - can be overridden by config file or command line
-        private static string SerialPortName = "COM8"; // Default value
+        private static string SerialPortName = "COM10"; // Default value
         private static int SerialBaudRate = 2000000; // Changed to 2mbps
         private static SerialPort? _serialPort;
         private static Thread? _serialReaderThread;
@@ -39,11 +39,11 @@ namespace TouchDataCaptureService
             private static readonly int MinSamplesForScaling = 10;
             private static readonly object _scalingLock = new object();
 
-            public static (int scaledX, int scaledY) ScaleCoordinates(int rawX, int rawY, IntPtr hDevice)
+            public static (int scaledX, int scaledY) ScaleCoordinates(int rawX, int rawY, Dictionary<string, (int min, int max)> logicalRanges)
             {
                 lock (_scalingLock)
                 {
-                    var logicalRanges = GetHidLogicalRanges(hDevice);
+                    
                     // Safely get logical ranges with defaults
                     if (logicalRanges.TryGetValue("X", out var xRange))
                     {
@@ -441,6 +441,7 @@ namespace TouchDataCaptureService
         private static bool _serialHeaderWritten = false;
 
         private static List<string> SkipProcesses = new() { "InteractiveDisplayCapture", "ScreenPaint" };
+        private static readonly Dictionary<IntPtr, Dictionary<string, (int min, int max)>> deviceLogicalRanges = new();
 
         private static void ProcessCommandLineArgs(string[] args)
         {
@@ -724,14 +725,14 @@ namespace TouchDataCaptureService
             }
         }
 
-        public static void SendTouchDataViaSerial(DecodedTouchData touchData,IntPtr hDevice)
+        public static void SendTouchDataViaSerial(DecodedTouchData touchData, Dictionary<string, (int min, int max)> logicalRanges)
         {
             if (_serialPort != null && _serialPort.IsOpen && touchData.IsValid)
             {
                 try
                 {
                     // Apply dynamic coordinate scaling to normalize coordinates to HID range (0-32767)
-                    var (hidX, hidY) = CoordinateScaler.ScaleCoordinates(touchData.X, touchData.Y, hDevice);
+                    var (hidX, hidY) = CoordinateScaler.ScaleCoordinates(touchData.X, touchData.Y, logicalRanges);
 
                     // Send all decoded fields
                     // Format: TOUCH,x,y,cid,tip,pressure,inrange,confidence,width,height,azimuth,altitude,twist,contactcount
@@ -1025,9 +1026,14 @@ namespace TouchDataCaptureService
 
                             // Send touch data via serial
                             if (!SendRawDataSerial)
-                                SendTouchDataViaSerial(decoded, header.hDevice);
+                            {
+                                if (deviceLogicalRanges.TryGetValue(header.hDevice, out var logicalRanges))
+                                {
+                                    SendTouchDataViaSerial(decoded, logicalRanges);
+                                }
+                            }
                         }
-                        else
+                        if(!decoded.IsValid)
                         {
                             // Fallback to basic decoding
                             string? fallback = DecodeTouchReportFallback(report);
@@ -1088,6 +1094,26 @@ namespace TouchDataCaptureService
                         string deviceName = $"HID_{hDevice.ToString("X8")}";
                         deviceNames[hDevice] = deviceName;
 
+                        // ⚡ Get and cache HID logical ranges ONCE per device
+                        var logicalRanges = GetHidLogicalRanges(hDevice);
+                        deviceLogicalRanges[hDevice] = logicalRanges;
+
+                        // ⚡ Initialize WindowProcess screen metrics with logical ranges
+                        if (logicalRanges.ContainsKey("X") && logicalRanges.ContainsKey("Y"))
+                        {
+                            WindowProcess.InitializeScreenMetrics(
+                                logicalRanges["X"].min,
+                                logicalRanges["X"].max,
+                                logicalRanges["Y"].min,
+                                logicalRanges["Y"].max
+                            );
+                        }
+                        else
+                        {
+                            // Use default ranges if not available
+                            WindowProcess.InitializeScreenMetrics(0, 32767, 0, 32767);
+                        }
+
                         Debug.WriteLine($"Registered HID device: {deviceName}");
                     }
                 }
@@ -1144,18 +1170,11 @@ namespace TouchDataCaptureService
                 {
                     result.Y = (int)y;
                 }
-
-                // Get HID logical ranges for this device
-                var logicalRanges = GetHidLogicalRanges(hDevice);
                 
                 // Convert HID coordinates to screen coordinates for process detection
-                if (result.X > 0 && result.Y > 0 && logicalRanges.ContainsKey("X") && logicalRanges.ContainsKey("Y"))
+                if (result.X > 0 && result.Y > 0)
                 {
-                    var (screenX, screenY) = WindowProcess.ConvertHidToScreenCoordinates(
-                        result.X, result.Y,
-                        logicalRanges["X"].min, logicalRanges["X"].max,
-                        logicalRanges["Y"].min, logicalRanges["Y"].max
-                    );
+                    var (screenX, screenY) = WindowProcess.ConvertHidToScreenCoordinates(result.X, result.Y);
                     
                     // Now use screen coordinates for process detection
                     var windowProcessData = WindowProcess.GetProcessAtPoint(screenX, screenY, true);

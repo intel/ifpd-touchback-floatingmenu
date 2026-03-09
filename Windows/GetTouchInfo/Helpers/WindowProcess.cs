@@ -40,20 +40,40 @@ namespace TouchDataCaptureService.Helpers
         [DllImport("user32.dll")]
         private static extern int GetSystemMetrics(int nIndex);
 
+        [DllImport("user32.dll")]
+        private static extern bool IsWindow(IntPtr hWnd);
+
         private const int SM_CXSCREEN = 0;  // Screen width
         private const int SM_CYSCREEN = 1;  // Screen height
 
+        private static int screenWidth = 0;
+        private static int screenHeight = 0;
+        private static int logicalMinX = 0;
+        private static int logicalMaxX = 0;
+        private static int logicalMinY = 0;
+        private static int logicalMaxY = 0;
+
+        // ⚡ Process name cache: ProcessID -> ProcessName
+        private static readonly Dictionary<uint, string> ProcessInfoDict = new Dictionary<uint, string>();
+        private static readonly object _cacheLock = new object();
+
         private static WindowProcessInfo currentWindowProcessInfo = new WindowProcessInfo("Unknown", 0, IntPtr.Zero, "Unknown");
+
+        public static void InitializeScreenMetrics(int _logicalMinX, int _logicalMaxX, int _logicalMinY, int _logicalMaxY)
+        {
+            screenWidth = GetSystemMetrics(SM_CXSCREEN);
+            screenHeight = GetSystemMetrics(SM_CYSCREEN);
+            logicalMinX = _logicalMinX;
+            logicalMaxX = _logicalMaxX;
+            logicalMinY = _logicalMinY;
+            logicalMaxY = _logicalMaxY;
+            Debug.WriteLine($"Screen Metrics Initialized: Screen({screenWidth}x{screenHeight}), LogicalX({logicalMinX}-{logicalMaxX}), LogicalY({logicalMinY}-{logicalMaxY})");
+        }
 
         // Convert HID logical coordinates to screen pixel coordinates
         public static (int screenX, int screenY) ConvertHidToScreenCoordinates(
-            int hidX, int hidY,
-            int logicalMinX, int logicalMaxX,
-            int logicalMinY, int logicalMaxY)
+            int hidX, int hidY)
         {
-            int screenWidth = GetSystemMetrics(SM_CXSCREEN);
-            int screenHeight = GetSystemMetrics(SM_CYSCREEN);
-
             // Map HID range to screen range
             double normalizedX = (double)(hidX - logicalMinX) / (logicalMaxX - logicalMinX);
             double normalizedY = (double)(hidY - logicalMinY) / (logicalMaxY - logicalMinY);
@@ -73,66 +93,129 @@ namespace TouchDataCaptureService.Helpers
 
                 if (windowHandle == IntPtr.Zero)
                 {
-                    // Fallback to foreground window
                     windowHandle = GetForegroundWindow();
                 }
 
-                if (windowHandle != IntPtr.Zero)
+                if (windowHandle == IntPtr.Zero)
                 {
-                    // Get process ID
-                    GetWindowThreadProcessId(windowHandle, out uint processId);
-                    if (processId != currentWindowProcessInfo.ProcessId)
-                    {
-                        Debug.WriteLine($"New process detected: {processId}");
-                        currentWindowProcessInfo.ProcessId = processId;
+                    return new WindowProcessInfo("Unknown", 0, IntPtr.Zero, "");
+                }
 
-                    string processName = "Unknown";
-
-                    try
-                    {
-                        using (Process process = Process.GetProcessById((int)processId))
-                        {
-                            processName = process.ProcessName;
-                        }
-                    }
-                    catch (ArgumentException)
-                    {
-                        // Process might have exited
-                        processName = "Exited";
-                    }
-                    catch (Exception ex)
-                    {
-                        Debug.WriteLine($"Error getting process info: {ex.Message}");
-                        processName = "AccessDenied";
-                    }
-
-                    currentWindowProcessInfo.ProcessName = processName;
-                    currentWindowProcessInfo.WindowHandle = windowHandle;
-
-                    // Get window title
-                    if (getWindowTitle)
-                    {
-                        StringBuilder windowTitleBuilder = new StringBuilder(256);
-                        GetWindowText(windowHandle, windowTitleBuilder, windowTitleBuilder.Capacity);
-                        string windowTitle = windowTitleBuilder.ToString();
-                        currentWindowProcessInfo.WindowTitle = windowTitle;
-                    }
-
+                // ✅ Check if same window - FAST PATH
+                if (windowHandle == currentWindowProcessInfo.WindowHandle && 
+                    IsWindow(currentWindowProcessInfo.WindowHandle))
+                {
                     return currentWindowProcessInfo;
                 }
-                else
+
+                // ✅ Window changed - update everything
+                GetWindowThreadProcessId(windowHandle, out uint processId);
+                
+                // ✅ Always use cache (fast when cached, updates when not)
+                string processName = GetProcessNameCached(processId);
+
+                // ✅ Get window title only when requested
+                string windowTitle = "";
+                if (getWindowTitle)
                 {
-                    Debug.WriteLine($"No change in process, return existing info");
-                    return currentWindowProcessInfo;
+                    StringBuilder windowTitleBuilder = new StringBuilder(256);
+                    int length = GetWindowText(windowHandle, windowTitleBuilder, windowTitleBuilder.Capacity);
+                    windowTitle = length > 0 ? windowTitleBuilder.ToString() : "";
                 }
-            }
+
+                // ✅ Create NEW object and cache it
+                currentWindowProcessInfo = new WindowProcessInfo(processName, processId, windowHandle, windowTitle);
+                
+                Debug.WriteLine($"Window updated: PID={processId}, Process={processName}, Handle={windowHandle:X8}");
+
+                return currentWindowProcessInfo;
             }
             catch (Exception ex)
             {
                 Debug.WriteLine($"Error getting process info: {ex.Message}");
+                return new WindowProcessInfo("Unknown", 0, IntPtr.Zero, "");
             }
+        }
 
-            return new WindowProcessInfo("Unknown", 0, IntPtr.Zero, "");
+        /// <summary>
+        /// Gets process name from cache if available, otherwise fetches and caches it
+        /// </summary>
+        private static string GetProcessNameCached(uint processId)
+        {
+            lock (_cacheLock)
+            {
+                // Check if process name is already cached
+                if (ProcessInfoDict.TryGetValue(processId, out string? cachedName))
+                {
+                    Debug.WriteLine($"Process name retrieved from cache: {processId} -> {cachedName}");
+                    return cachedName;
+                }
+
+                // Not in cache, fetch it
+                string processName = "Unknown";
+                try
+                {
+                    using (Process process = Process.GetProcessById((int)processId))
+                    {
+                        processName = process.ProcessName;
+                    }
+                    
+                    // Cache the result
+                    ProcessInfoDict[processId] = processName;
+                    Debug.WriteLine($"Process name cached: {processId} -> {processName}");
+                }
+                catch (ArgumentException)
+                {
+                    // Process might have exited
+                    processName = "Exited";
+                    ProcessInfoDict[processId] = processName;
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"Error getting process info: {ex.Message}");
+                    processName = "AccessDenied";
+                    // Don't cache errors - might be temporary
+                }
+
+                return processName;
+            }
+        }
+
+        /// <summary>
+        /// Clears the process name cache (useful for cleanup or testing)
+        /// </summary>
+        public static void ClearProcessCache()
+        {
+            lock (_cacheLock)
+            {
+                ProcessInfoDict.Clear();
+                Debug.WriteLine("Process cache cleared");
+            }
+        }
+
+        /// <summary>
+        /// Removes a specific process from the cache (useful when a process exits)
+        /// </summary>
+        public static void RemoveFromProcessCache(uint processId)
+        {
+            lock (_cacheLock)
+            {
+                if (ProcessInfoDict.Remove(processId))
+                {
+                    Debug.WriteLine($"Process {processId} removed from cache");
+                }
+            }
+        }
+
+        /// <summary>
+        /// Gets the current cache statistics
+        /// </summary>
+        public static int GetCacheSize()
+        {
+            lock (_cacheLock)
+            {
+                return ProcessInfoDict.Count;
+            }
         }
     }
 
@@ -142,6 +225,7 @@ namespace TouchDataCaptureService.Helpers
         public uint ProcessId { get; set; }
         public IntPtr WindowHandle { get; set; }
         public string WindowTitle { get; set; } = "Unknown";
+        
         public WindowProcessInfo(string processName, uint processId, IntPtr windowHandle, string windowTitle)
         {
             ProcessName = processName;
