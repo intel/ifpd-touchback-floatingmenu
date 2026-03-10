@@ -27,11 +27,12 @@
         WindowState="Maximized"
         WindowStyle="SingleBorderWindow"
         Background="Black"
-        Title="Camera Preview"
+        Title="PC Cast"
         Focusable="True"
     KeyDown="Window_KeyDown">
     <Grid>
         <Image x:Name="CameraImage"
-               Stretch="Uniform"/>
+               Stretch="UniformToFill"
+               RenderOptions.BitmapScalingMode="HighQuality"/>
     </Grid>
 </Window>

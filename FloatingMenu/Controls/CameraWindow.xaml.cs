@@ -62,6 +62,11 @@ namespace InteractiveDisplayCapture.Controls
                 return;
             }
 
+            _capture.Set(VideoCaptureProperties.FrameWidth, 1920);
+            _capture.Set(VideoCaptureProperties.FrameHeight, 1080);
+
+            _capture.Set(VideoCaptureProperties.Fps, 30);
+            
             _cameraTask = Task.Run(async () =>
             {
                 using var frame = new Mat();
