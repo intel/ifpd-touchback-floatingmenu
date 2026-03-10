@@ -10,32 +10,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Remove="ppInk\Cyotek.Windows.Forms.ColorPicker.dll" />
-    <None Remove="ppInk\Microsoft.Ink.dll" />
-    <None Remove="ppInk\ppInk.exe" />
-    <None Remove="ppInk\ppInk.exe.config" />
-    <None Remove="ppInk\ppInk.pdb" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Content Include="ppInk\Cyotek.Windows.Forms.ColorPicker.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="ppInk\Microsoft.Ink.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="ppInk\ppInk.exe">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="ppInk\ppInk.exe.config">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="ppInk\ppInk.pdb">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="OpenCvSharp4" Version="4.13.0.20260302" />
     <PackageReference Include="OpenCvSharp4.runtime.win" Version="4.13.0.20260302" />
     <PackageReference Include="OpenCvSharp4.WpfExtensions" Version="4.13.0.20260302" />
