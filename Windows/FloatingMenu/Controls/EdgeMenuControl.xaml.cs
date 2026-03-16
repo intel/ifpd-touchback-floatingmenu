@@ -47,8 +47,8 @@ namespace InteractiveDisplayCapture.Controls
         {
             var window = Window.GetWindow(this);
 
-            var screen = Screen.FromHandle(
-                new WindowInteropHelper(window).Handle);
+            var screen = System.Windows.Forms.Screen.FromHandle(
+                         new WindowInteropHelper(window).Handle);
 
             double screenHeight = screen.WorkingArea.Height;
             double screenWidth = screen.WorkingArea.Width;

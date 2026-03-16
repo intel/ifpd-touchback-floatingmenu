@@ -45,8 +45,6 @@ namespace InteractiveDisplayCapture.Controls
         public SignalSource()
         {
             InitializeComponent();
-            LoadCameras();
-            DataContext = this;
 
             Devices = new ObservableCollection<SignalSourceModel>
             {
@@ -54,6 +52,9 @@ namespace InteractiveDisplayCapture.Controls
                 new SignalSourceModel { Name = "PC2", Status = DeviceStatusEnum.Available }
             };
             device = new SignalSourceModel();
+           
+            DataContext = this;
+            LoadCameras();
             this.Unloaded += (s, e) => StopCamera();
         }
 
@@ -68,7 +69,8 @@ namespace InteractiveDisplayCapture.Controls
                 Devices.Add(new SignalSourceModel
                 {
                     Name = $"PC {Devices.Count + 1}",
-                    Status = DeviceStatusEnum.Available
+                    Status = DeviceStatusEnum.Available,
+                    CameraIndex = Devices.Count
                 });
             }
         }
@@ -135,9 +137,9 @@ namespace InteractiveDisplayCapture.Controls
 
     
         public event PropertyChangedEventHandler? PropertyChanged;
-        protected void OnPropertyChanged([CallerMemberName] string name = null)
+        protected void OnPropertyChanged([CallerMemberName] string? propertyName = null)
         {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
 
         private void DeviceList_PreviewMouseLeftButtonUp(object sender, System.Windows.Input.MouseButtonEventArgs e)
@@ -167,7 +169,7 @@ namespace InteractiveDisplayCapture.Controls
 
                 device.Status = DeviceStatusEnum.Connected;
                 
-                DeviceSelected?.Invoke(0); // Open camera
+                DeviceSelected?.Invoke(device.CameraIndex); // Open camera
             }
             else if (device.Status == DeviceStatusEnum.Connected)
             {

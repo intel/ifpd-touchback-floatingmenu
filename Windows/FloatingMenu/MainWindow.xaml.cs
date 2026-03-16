@@ -267,7 +267,7 @@ namespace InteractiveDisplayCapture
         }
 
        
-        private async Task LaunchAnnotationAppAsync()
+        private void LaunchAnnotationAppAsync()
         {
             try
             {

@@ -27,6 +27,8 @@ namespace InteractiveDisplayCapture.Helpers
     {
         private DeviceStatusEnum _status;
         public string Name { get; set; }
+
+        public int CameraIndex { get; set; }
         public DeviceStatusEnum Status
         {
             get => _status;
@@ -38,7 +40,7 @@ namespace InteractiveDisplayCapture.Helpers
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;
-        protected void OnPropertyChanged([CallerMemberName] string name = null)
+        protected void OnPropertyChanged([CallerMemberName] string? name = null)
             => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
     }
 }

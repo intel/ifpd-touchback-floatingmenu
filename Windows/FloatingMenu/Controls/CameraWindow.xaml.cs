@@ -60,6 +60,7 @@ namespace InteractiveDisplayCapture.Controls
             if (!_capture.IsOpened())
             {
                 MessageBox.Show("Camera failed to open!");
+                StopCamera();
                 return;
             }
 

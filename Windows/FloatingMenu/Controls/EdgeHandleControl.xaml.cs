@@ -70,8 +70,12 @@ namespace InteractiveDisplayCapture.Controls
             double screenHeight = SystemParameters.PrimaryScreenHeight;
             newTop = Math.Max(0, Math.Min(screenHeight - parentWindow.Height, newTop));
 
-            parentWindow.Left = 0;      // ?? Always stay at left edge
-            parentWindow.Top = newTop;  // ? Move only vertically
+            //parentWindow.Left = 0;      // Always stay at left edge
+            //parentWindow.Top = newTop;  // Move only vertically
+
+            double rightDockLeft = SystemParameters.WorkArea.Right - parentWindow.Width;
+            parentWindow.Left = rightDockLeft; // Keep window docked to the right edge
+            parentWindow.Top = newTop;         // Move only vertically
         }
 
         private void EdgeButton_MouseUp(object sender, MouseButtonEventArgs e)

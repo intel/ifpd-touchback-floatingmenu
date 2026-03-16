@@ -31,7 +31,7 @@ namespace InteractiveDisplayCapture
         {
             base.OnStartup(e);
 
-            // 1?? Start floating edge handle
+            // Start the floating edge handle by showing the main window on application startup.
             var mainWindow = new MainWindow();
             mainWindow.Show();
 
