@@ -25,14 +25,14 @@
         xmlns:local="clr-namespace:InteractiveDisplayCapture.Controls"
         mc:Ignorable="d"
         WindowState="Maximized"
-        WindowStyle="SingleBorderWindow"
+        WindowStyle="None"
+        ResizeMode="NoResize"
         Background="Black"
         Title="PC Cast"
         Focusable="True"
     KeyDown="Window_KeyDown">
     <Grid>
         <Image x:Name="CameraImage"
-               Stretch="UniformToFill"
-               RenderOptions.BitmapScalingMode="HighQuality"/>
+               Stretch="UniformToFill" />
     </Grid>
 </Window>

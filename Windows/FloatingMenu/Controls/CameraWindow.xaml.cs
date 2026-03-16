@@ -17,6 +17,7 @@
 
 using OpenCvSharp;
 using OpenCvSharp.WpfExtensions;
+using System.Windows;
 using System.Windows.Input;
 using MessageBox = System.Windows.MessageBox;
 
@@ -62,10 +63,14 @@ namespace InteractiveDisplayCapture.Controls
                 return;
             }
 
-            _capture.Set(VideoCaptureProperties.FrameWidth, 1920);
-            _capture.Set(VideoCaptureProperties.FrameHeight, 1080);
+            // Get primary screen resolution dynamically
+            var screenWidth = (int)SystemParameters.PrimaryScreenWidth;
+            var screenHeight = (int)SystemParameters.PrimaryScreenHeight;
 
-            _capture.Set(VideoCaptureProperties.Fps, 30);
+            _capture.Set(VideoCaptureProperties.FrameWidth, screenWidth);
+            _capture.Set(VideoCaptureProperties.FrameHeight, screenHeight);
+
+            _capture.Set(VideoCaptureProperties.Fps, 60);
             
             _cameraTask = Task.Run(async () =>
             {
@@ -86,7 +91,7 @@ namespace InteractiveDisplayCapture.Controls
                         });
                     }
 
-                    await Task.Delay(30);
+                    await Task.Delay(16);
                 }
             }, token);
         }
