@@ -8,6 +8,11 @@ MCU/sdkconfig.old
 MCU/managed_components/
 MCU/dependencies.lock
 
+# Build configuration
+.clangd
+sdkconfig.defaults
+dependencies.lock
+
 # Binaries
 *.bin
 *.elf
