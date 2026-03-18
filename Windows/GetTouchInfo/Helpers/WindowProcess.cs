@@ -69,6 +69,11 @@ namespace TouchDataCaptureService.Helpers
         private static readonly Dictionary<uint, string> ProcessInfoDict = new Dictionary<uint, string>();
         private static readonly object _cacheLock = new object();
 
+        // ⚡ PC Cast window handle cache
+        private static readonly object _pcCastLock = new object();
+        private static IntPtr _pcCastWindowHandle = IntPtr.Zero;
+        private static uint _cachedProcessId = 0;
+
         private static WindowProcessInfo currentWindowProcessInfo = new WindowProcessInfo("Unknown", 0, IntPtr.Zero, "Unknown");
 
         public static void InitializeScreenMetrics(int _logicalMinX, int _logicalMaxX, int _logicalMinY, int _logicalMaxY)
@@ -169,9 +174,39 @@ namespace TouchDataCaptureService.Helpers
             }
         }
 
+        /// <summary>
+        /// ⚡ OPTIMIZED: Fast check using cached window handle
+        /// </summary>
         public static bool IsSourceDeviceCasted(uint processId)
         {
-            var windows = new List<WindowProcessInfo>();
+            lock (_pcCastLock)
+            {
+                // Fast path: Check if cached handle is still valid
+                if (_pcCastWindowHandle != IntPtr.Zero && 
+                    _cachedProcessId == processId &&
+                    IsWindow(_pcCastWindowHandle) && 
+                    IsWindowVisible(_pcCastWindowHandle))
+                {
+                    return true;
+                }
+
+                // Slow path: Handle is invalid or process changed, re-scan
+                _pcCastWindowHandle = FindPCCastWindow(processId);
+                _cachedProcessId = processId;
+
+                bool isOpen = _pcCastWindowHandle != IntPtr.Zero;
+                Debug.WriteLine($"PC Cast window {(isOpen ? "FOUND" : "NOT FOUND")} for PID {processId} (Handle: {_pcCastWindowHandle:X8})");
+                
+                return isOpen;
+            }
+        }
+
+        /// <summary>
+        /// Finds the PC Cast window handle for a given process
+        /// </summary>
+        private static IntPtr FindPCCastWindow(uint processId)
+        {
+            IntPtr foundHandle = IntPtr.Zero;
 
             EnumWindows((hWnd, lParam) =>
             {
@@ -183,14 +218,30 @@ namespace TouchDataCaptureService.Helpers
                     int length = GetWindowText(hWnd, title, title.Capacity);
                     string windowTitle = length > 0 ? title.ToString() : "";
 
-                    string processName = GetProcessNameCached(processId);
-                    windows.Add(new WindowProcessInfo(processName, processId, hWnd, windowTitle));
+                    if (windowTitle.Contains("PC Cast", StringComparison.OrdinalIgnoreCase))
+                    {
+                        foundHandle = hWnd;
+                        return false; // Stop enumeration
+                    }
                 }
 
                 return true; // Continue enumeration
             }, IntPtr.Zero);
 
-            return windows.Any(w => w.WindowTitle.Contains("PC Cast", StringComparison.OrdinalIgnoreCase));
+            return foundHandle;
+        }
+
+        /// <summary>
+        /// Manually invalidate the cached PC Cast window handle (optional)
+        /// </summary>
+        public static void InvalidatePCCastCache()
+        {
+            lock (_pcCastLock)
+            {
+                _pcCastWindowHandle = IntPtr.Zero;
+                _cachedProcessId = 0;
+                Debug.WriteLine("PC Cast cache invalidated");
+            }
         }
 
         /// <summary>
