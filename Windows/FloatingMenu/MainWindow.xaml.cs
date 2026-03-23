@@ -314,27 +314,6 @@ namespace FloatingMenu
                 ShowFlyout(_signalSourcePage);
                 EdgeMenu.PCStatus.Text = "";
             });
-
-
-
-            //Dispatcher.Invoke(() =>
-            //{
-            //    _cameraWindow = null;
-            //    _cameraClosedManually = true;
-            //    _menuOpen = false;
-            //    ToggleMenu();
-            //    EdgeMenu.ClearSelection();
-            //    EdgeMenu.SelectMenuItem(2);
-            //    if (_cameraClosedManually)
-            //    {
-            //        _signalSourcePage = new SignalSource();
-            //        _signalSourcePage.DeviceSelected += OpenCameraWindow;
-            //        _cameraClosedManually = false;
-            //    }
-            //    KillTouchDataCapture();
-            //    ShowFlyout(_signalSourcePage);
-
-            //});
         }
 
         private void KillTouchDataCapture()
