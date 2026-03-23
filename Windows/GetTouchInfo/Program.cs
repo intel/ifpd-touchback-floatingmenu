@@ -1171,11 +1171,6 @@ namespace TouchDataCaptureService
                         if (decoded.IsValid)
                         {
                             var decodedLogString = (i != contactCount) ? $"[HID] {decoded.Summary}" : $"[HID] {decoded.Summary}\n";
-                            
-                            // In your touch event handler
-                            var (screenX, screenY) = WindowProcess.ConvertHidToScreenCoordinates(decoded.X, decoded.Y);
-                            var windowInfo = WindowProcess.GetProcessAtPoint(screenX, screenY);
-
                             LogDecoded(decodedLogString);
                             LogDetailed(decoded);
 
@@ -1185,11 +1180,11 @@ namespace TouchDataCaptureService
                                 if (!SendRawDataSerial)
                                     SendTouchDataViaSerial(decoded, header.hDevice);
                             }
-                            if (windowInfo.ProcessName.Equals("InteractiveDisplayCapture") ||
-                                windowInfo.ProcessName.Equals("FloatingMenu"))
+                            if (decoded.ProcessName.Equals("InteractiveDisplayCapture") ||
+                                decoded.ProcessName.Equals("FloatingMenu"))
                             {
                                 // Only send events if the touch is specifically on the PC Cast window
-                                if (WindowProcess.IsTouchOnPCCastWindow(windowInfo.WindowHandle, windowInfo.ProcessId))
+                                if (WindowProcess.IsTouchOnPCCastWindow(decoded.WindowHandle, decoded.ProcessId))
                                 {
                                     // ✅ Send touch event - user touched PC Cast window
                                     if (!SendRawDataSerial)

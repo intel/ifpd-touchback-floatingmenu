@@ -45,8 +45,12 @@ namespace TouchDataCaptureService.Helpers
         [DllImport("user32.dll")]
         private static extern bool IsWindowVisible(IntPtr hWnd);
 
+        [DllImport("user32.dll")]
+        private static extern IntPtr GetAncestor(IntPtr hWnd, uint gaFlags);
+
         private const int SM_CXSCREEN = 0;  // Screen width
         private const int SM_CYSCREEN = 1;  // Screen height
+        private const uint GA_ROOT = 2;  // Get root window
 
         private static int screenWidth = 0;
         private static int screenHeight = 0;
@@ -65,6 +69,7 @@ namespace TouchDataCaptureService.Helpers
         private static uint _cachedProcessId = 0;
 
         private static WindowProcessInfo currentWindowProcessInfo = new WindowProcessInfo("Unknown", 0, IntPtr.Zero, "Unknown");
+        private static string PCCastWindowTitle = "PC Cast";
 
         public static void InitializeScreenMetrics(int _logicalMinX, int _logicalMaxX, int _logicalMinY, int _logicalMaxY)
         {
@@ -165,6 +170,18 @@ namespace TouchDataCaptureService.Helpers
         }
 
         /// <summary>
+        /// Gets the root (top-level) window handle from any window handle (including child windows)
+        /// </summary>
+        private static IntPtr GetRootWindow(IntPtr hWnd)
+        {
+            if (hWnd == IntPtr.Zero)
+                return IntPtr.Zero;
+
+            IntPtr root = GetAncestor(hWnd, GA_ROOT);
+            return root != IntPtr.Zero ? root : hWnd;
+        }
+
+        /// <summary>
         /// Finds the PC Cast window handle for a given process
         /// </summary>
         private static IntPtr FindPCCastWindow(uint processId)
@@ -181,7 +198,7 @@ namespace TouchDataCaptureService.Helpers
                     int length = GetWindowText(hWnd, title, title.Capacity);
                     string windowTitle = length > 0 ? title.ToString() : "";
 
-                    if (windowTitle.Contains("PC Cast", StringComparison.OrdinalIgnoreCase))
+                    if (windowTitle.Contains(PCCastWindowTitle, StringComparison.OrdinalIgnoreCase))
                     {
                         foundHandle = hWnd;
                         return false; // Stop enumeration
@@ -290,6 +307,7 @@ namespace TouchDataCaptureService.Helpers
 
         /// <summary>
         /// ⚡ Checks if the given window handle is the PC Cast window (not the main InteractiveDisplayCapture window)
+        /// Handles both top-level and child window handles by normalizing to root window
         /// </summary>
         public static bool IsTouchOnPCCastWindow(IntPtr touchWindowHandle, uint processId)
         {
@@ -300,14 +318,26 @@ namespace TouchDataCaptureService.Helpers
                     return false;
                 }
 
+                // Normalize touch window handle to its root window
+                IntPtr rootWindowHandle = GetRootWindow(touchWindowHandle);
+                bool isMatch = false;
+
                 // Check if cached PC Cast handle is still valid
                 if (_pcCastWindowHandle != IntPtr.Zero && 
                     _cachedProcessId == processId &&
                     IsWindow(_pcCastWindowHandle) && 
                     IsWindowVisible(_pcCastWindowHandle))
                 {
-                    // Compare the touch window handle with the cached PC Cast window handle
-                    return touchWindowHandle == _pcCastWindowHandle;
+                    // Compare root windows instead of direct handles
+                    // This ensures child controls (buttons, text boxes, etc.) are properly detected
+                    isMatch = rootWindowHandle == _pcCastWindowHandle;
+                    
+                    if (isMatch)
+                    {
+                        Debug.WriteLine($"Touch on PC Cast window detected (Root: {rootWindowHandle:X8}, Touch: {touchWindowHandle:X8})");
+                    }
+                    
+                    return isMatch;
                 }
 
                 // Cache invalid - re-scan for PC Cast window
@@ -318,9 +348,16 @@ namespace TouchDataCaptureService.Helpers
                 {
                     return false; // No PC Cast window found
                 }
-
+                
                 // Check if the touch is on the newly found PC Cast window
-                return touchWindowHandle == _pcCastWindowHandle;
+                isMatch = rootWindowHandle == _pcCastWindowHandle;
+                
+                if (isMatch)
+                {
+                    Debug.WriteLine($"Touch on PC Cast window detected (Root: {rootWindowHandle:X8}, Touch: {touchWindowHandle:X8})");
+                }
+                
+                return isMatch;
             }
         }
     }
