@@ -2,7 +2,7 @@
 
 [![.NET](https://img.shields.io/badge/.NET-10-512BD4)](https://dotnet.microsoft.com/)
 [![ESP32-S3](https://img.shields.io/badge/ESP32-S3-E7352C)](https://www.espressif.com/en/products/socs/esp32-s3)
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](Apache-2.0.txt)
 
 A complete solution to enable reverse touch / touch-back functionality for Interactive Flat Panel Displays (IFPD) with Intel Architecture (IA) platforms.
 

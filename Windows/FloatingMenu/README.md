@@ -3,7 +3,7 @@
 [![.NET](https://img.shields.io/badge/.NET-10-512BD4)](https://dotnet.microsoft.com/)
 [![C#](https://img.shields.io/badge/C%23-14.0-239120)](https://docs.microsoft.com/en-us/dotnet/csharp/)
 [![WPF](https://img.shields.io/badge/WPF-Windows-blue)](https://docs.microsoft.com/en-us/dotnet/desktop/wpf/)
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](Apache-2.0.txt)
 
 A Windows WPF application that provides an edge-docked floating menu interface for camera switching, signal source management, and screen annotation integration on interactive flat panel displays (IFPD).
 
@@ -123,7 +123,6 @@ FloatingMenu/
 ### Dependencies
 - **OpenCvSharp4**: Computer vision library for camera capture
 - **OpenCvSharp4.WpfExtensions**: WPF integration for OpenCvSharp
-- **System.Drawing.Common**: Image processing support
 
 ### Permissions
 - **Standard User** - No administrator rights required for normal operation
