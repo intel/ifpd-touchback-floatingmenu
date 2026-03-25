@@ -39,9 +39,6 @@ namespace FloatingMenu.Helpers
 
             if (string.IsNullOrWhiteSpace(config.Port))
                 throw new Exception("Port is missing in config");
-             
-            if (string.IsNullOrWhiteSpace(config.ServiceRelativePath))
-                throw new Exception("Service path missing");
 
             string port = config.Port.Trim().ToUpper();
 
@@ -53,13 +50,25 @@ namespace FloatingMenu.Helpers
             if (!availablePorts.Contains(port))
                 throw new Exception($"Port '{port}' not found on this machine");
 
-            string exePath = Path.Combine(
-        AppDomain.CurrentDomain.BaseDirectory,
-        config.ServiceRelativePath 
-    );
+            string baseDir = AppDomain.CurrentDomain.BaseDirectory;
+            string externalToolsDir = Path.Combine(baseDir, "ExternalTools", "TouchDataCaptureService");
 
-            if (!File.Exists(exePath))
-                throw new Exception($"Service EXE not found:\n{exePath}");
+            string releaseExePath = Path.Combine(externalToolsDir, "TouchDataCaptureService.exe");
+            string debugExePath = Path.Combine(externalToolsDir, "TouchDataCaptureService.exe");
+
+            string exePath;
+            if (File.Exists(releaseExePath))
+            {
+                exePath = releaseExePath;
+            }
+            else if (File.Exists(debugExePath))
+            {
+                exePath = debugExePath;
+            }
+            else
+            {
+                throw new Exception($"Service EXE not found in:\n{releaseExePath}\nor\n{debugExePath}");
+            }
 
             return (port, exePath);
         }
@@ -69,6 +78,5 @@ namespace FloatingMenu.Helpers
     public class ConfigModel
     {
         public string Port { get; set; }
-        public string ServiceRelativePath { get; set; }
     }
 }
