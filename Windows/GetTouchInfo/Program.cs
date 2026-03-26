@@ -1180,8 +1180,9 @@ namespace TouchDataCaptureService
                                 if (!SendRawDataSerial)
                                     SendTouchDataViaSerial(decoded, header.hDevice);
                             }
-                            if (decoded.ProcessName.Equals("InteractiveDisplayCapture") ||
-                                decoded.ProcessName.Equals("FloatingMenu"))
+                            // Centralized list of PC-cast-capable processes used for special handling
+                            string[] pcCastCapableProcesses = { "InteractiveDisplayCapture", "FloatingMenu" };
+                            if (Array.IndexOf(pcCastCapableProcesses, decoded.ProcessName) >= 0)
                             {
                                 // Only send events if the touch is specifically on the PC Cast window
                                 if (WindowProcess.IsTouchOnPCCastWindow(decoded.WindowHandle, decoded.ProcessId))
@@ -1193,7 +1194,7 @@ namespace TouchDataCaptureService
                                 else
                                 {
                                     // ❌ Don't send - user touched main window/side menu
-                                    Debug.WriteLine("Touch on main InteractiveDisplayCapture window - ignored");
+                                    Debug.WriteLine($"Touch on main {decoded.ProcessName} window - ignored");
                                 }
                             }
                         }
