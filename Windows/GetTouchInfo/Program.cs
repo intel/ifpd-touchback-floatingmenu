@@ -582,16 +582,6 @@ namespace TouchDataCaptureService
                 return;
             }
 
-            // For debugging arguments (remove in production)
-            if (args.Length > 0)
-            {
-                AllocConsole();
-                Console.WriteLine($"Arguments received: {string.Join(", ", args)}");
-                Console.WriteLine("Press any key to continue...");
-                Console.ReadKey();
-                FreeConsole();
-            }
-
             // Process command line arguments (overrides config file)
             ProcessCommandLineArgs(args);
 
