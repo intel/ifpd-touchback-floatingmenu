@@ -22,7 +22,7 @@ This guide covers building, publishing, and deploying the Floating Menu Applicat
 - **.NET 10 SDK** installed
 - **Git** for source control
 - **Visual Studio 2022** or **Visual Studio 2026** (recommended)
-- **OpenCvSharp4** NuGet packages available
+- **AForge** NuGet packages available
 
 ### Target Machine
 
@@ -62,8 +62,9 @@ This guide covers building, publishing, and deploying the Floating Menu Applicat
 	dotnet list package
 	```
   - Expected packages:
-	- OpenCvSharp4
-	- OpenCvSharp4.WpfExtensions
+	- AForge
+	- AForge.Video
+	- AForge.Video.DirectShow
 	- System.Drawing.Common
 
 ### 3. Build Release Version
@@ -86,12 +87,12 @@ This guide covers building, publishing, and deploying the Floating Menu Applicat
 	dir
 	```
 - Expected files:
-	- FloatingMenu.exe
-	- FloatingMenu.dll
-	- OpenCvSharp*.dll (multiple OpenCV libraries)
-	- FloatingMenu.runtimeconfig.json
-	- FloatingMenu.deps.json
-	- Controls, Helpers, Styles folders (if not embedded)
+- FloatingMenu.exe
+- FloatingMenu.dll
+- AForge*.dll (AForge libraries)
+- FloatingMenu.runtimeconfig.json
+- FloatingMenu.deps.json
+- Controls, Helpers, Styles folders (if not embedded)
 
 ## 📦 Publishing Options
 
@@ -127,7 +128,7 @@ Optional: Enable compression:
 ```
 dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile=true
 ```
-**Note**: `IncludeNativeLibrariesForSelfExtract=true` is important for OpenCvSharp native libraries.
+**Note**: `IncludeNativeLibrariesForSelfExtract=true` is important for AForge native libraries.
 
 Output: Single FloatingMenu.exe file
 
@@ -494,14 +495,15 @@ cd $installPath
 .\FloatingMenu.exe
 ```
 
-### Updating OpenCvSharp Dependencies
+### Updating AForge Dependencies
 
-If updating OpenCvSharp versions:
+If updating AForge versions:
 
 1. **Update NuGet packages** in development environment:
    ```
-   dotnet add package OpenCvSharp4
-   dotnet add package OpenCvSharp4.WpfExtensions
+   dotnet add package AForge
+   dotnet add package AForge.Video
+   dotnet add package AForge.Video.DirectShow
    ```
 
 2. **Rebuild and republish**:
@@ -563,7 +565,7 @@ Use this checklist for each deployment:
 - [ ] .NET 10 SDK installed on build machine
 - [ ] Source code up to date from repository
 - [ ] All changes committed and pushed
-- [ ] OpenCvSharp NuGet packages restored
+- [ ] AForge NuGet packages restored
 - [ ] Version number updated (if applicable)
 - [ ] Release notes prepared
 
@@ -572,7 +574,7 @@ Use this checklist for each deployment:
 - [ ] Release build completed without errors
 - [ ] Publish command executed for target platform
 - [ ] Output files verified in publish directory
-- [ ] OpenCvSharp native libraries included
+- [ ] AForge libraries included
 - [ ] Deployment package created (folder or ZIP)
 
 ### Target Machine Setup
@@ -677,10 +679,9 @@ Use this checklist for each deployment:
 - **.NET Publishing Guide**: [Microsoft Docs](https://learn.microsoft.com/dotnet/core/deploying/)
 - **WPF Deployment**: [Microsoft Docs](https://learn.microsoft.com/dotnet/desktop/wpf/app-development/deploying-a-wpf-application-wpf)
 - **Single File Deployment**: [Microsoft Docs](https://learn.microsoft.com/dotnet/core/deploying/single-file)
-- **OpenCvSharp Documentation**: [GitHub](https://github.com/shimat/opencvsharp)
+- **AForge.NET Documentation**: [Website](http://www.aforgenet.com/framework/)
 - **DirectShow Documentation**: [Microsoft Docs](https://learn.microsoft.com/windows/win32/directshow/directshow)
 - **Windows Camera Privacy**: [Microsoft Support](https://support.microsoft.com/windows/camera-privacy-settings)
-- **Task Scheduler**: [Windows Documentation](https://learn.microsoft.com/windows-server/administration/windows-commands/schtasks)
 
 ---
 
