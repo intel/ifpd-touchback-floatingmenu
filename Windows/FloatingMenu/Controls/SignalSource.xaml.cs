@@ -4,8 +4,6 @@
 *******************************************************************************/
 
 using FloatingMenu.Helpers;
-using OpenCvSharp;
-using OpenCvSharp.WpfExtensions;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -23,12 +21,8 @@ namespace FloatingMenu.Controls
     public partial class SignalSource : Page, INotifyPropertyChanged
     {
         public ObservableCollection<SignalSourceModel> Devices { get; set; }
-        private VideoCapture _capture;
-        
-        private CancellationTokenSource _cameraTokenSource;
-        private Task _cameraTask;
+       
         public event Action<int> DeviceSelected;
-        private SignalSourceModel device;
       
         public SignalSource()
         {
@@ -39,11 +33,10 @@ namespace FloatingMenu.Controls
                 new SignalSourceModel { Name = "PC1", Status = DeviceStatusEnum.Disconnected },
                 new SignalSourceModel { Name = "PC2", Status = DeviceStatusEnum.Available }
             };
-            device = new SignalSourceModel();
            
             DataContext = this;
             LoadCameras();
-            this.Unloaded += (s, e) => StopCamera();
+           
         }
 
         private async void LoadCameras()
@@ -60,28 +53,6 @@ namespace FloatingMenu.Controls
                     Status = DeviceStatusEnum.Available,
                     CameraIndex = Devices.Count
                 });
-            }
-        }
-
-        public void StopCamera()
-        {
-            try
-            {
-                _cameraTokenSource?.Cancel();
-                _cameraTask?.Wait(300);
-
-                _capture?.Release();
-                _capture?.Dispose();
-
-                _capture = null;
-                _cameraTokenSource = null;
-                _cameraTask = null;
-
-                CameraImage.Source = null;
-            }
-            catch
-            {
-                // ignore cleanup errors
             }
         }
 

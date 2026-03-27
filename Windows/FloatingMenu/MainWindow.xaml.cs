@@ -46,7 +46,7 @@ namespace FloatingMenu
             _signalSourcePage = new SignalSource();
            
             _signalSourcePage.DeviceSelected += OpenCameraWindow;
-            // this.LocationChanged += MainWindow_LocationChanged;
+            this.Unloaded += (s, e) => CloseCameraWindow();
         }
 
         private void ToggleMenu()
@@ -366,7 +366,7 @@ namespace FloatingMenu
         {
             try
             {
-                string exePath = @"C:\Program Files\WindowsApps\19566Hanakiansoftware.ScreenPaint_1.3.3.0_x64__y1w6xw98tx1ba\DesktopDrawing\ScreenPaint.exe";
+                string exePath = Helpers.ReadJSON.GetAnnotationAppPath();
                 //string exePath = System.IO.Path.Combine(
                 //    AppDomain.CurrentDomain.BaseDirectory,
                 //    "ppInk",
