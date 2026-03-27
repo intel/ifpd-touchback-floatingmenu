@@ -67,16 +67,18 @@ namespace FloatingMenu.Controls
                 _videoSource.NewFrame += VideoSource_NewFrame;
                 _videoSource.Start();
             }
-            catch(Exception e)
+            catch (Exception e)
             {
-                MessageBox.Show("PC Cast is not Enabled for the selected device.");
                 StopCamera();
 
-                Dispatcher.BeginInvoke(() =>
-                {
-                    CameraClosed?.Invoke();
-                    this.Close();
-                });
+                MessageBox.Show(
+                    this,
+                    "PC Cast is not Enabled for the selected device.",
+                    "Camera Error",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+
+                this.Close();
             }
         }
 

@@ -215,7 +215,7 @@ namespace FloatingMenu
 
         private void OpenCameraWindow(int index)
         {
-            
+
             if (index == -1)
             {
                 CloseCameraWindow();
@@ -234,17 +234,49 @@ namespace FloatingMenu
                             device.Status = DeviceStatusEnum.Available;
                         }
                     }
+                    _signalSourcePage.ResetOperationState();
                 }
                 return;
             }
-            _cameraWindow = new CameraWindow(index);
-            _cameraWindow.CameraClosed += OnCameraClosed;
 
-            _cameraWindow.Show();
-           
-           
-            CollapseMenu();
-           
+            try
+            {
+                _cameraWindow = new CameraWindow(index);
+                _cameraWindow.CameraClosed += OnCameraClosed;
+                _cameraWindow.Show();
+                CollapseMenu();
+
+                if (_signalSourcePage != null)
+                {
+                    _signalSourcePage.ResetOperationState();
+                }
+            }
+            catch (Exception ex)
+            {
+                _cameraWindow = null;
+
+                if (_signalSourcePage != null)
+                {
+                    foreach (var device in _signalSourcePage.Devices)
+                    {
+                        if (device.Status == DeviceStatusEnum.Connected)
+                        {
+                            device.Status = DeviceStatusEnum.Available;
+                        }
+                    }
+                    _signalSourcePage.ResetOperationState();
+                }
+
+                System.Threading.Tasks.Task.Run(() => KillTouchDataCapture());
+
+                MessageBox.Show(
+                    this,
+                    $"Failed to open camera window:\n\n{ex.Message}",
+                    "Camera Error",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+            }
+
         }
 
         private bool LaunchTouchDataCapture()
@@ -321,10 +353,11 @@ namespace FloatingMenu
                             device.Status = DeviceStatusEnum.Available;
                         }
                     }
+                    _signalSourcePage.ResetOperationState();
                 }
 
                 KillTouchDataCapture();
-                
+
                 EdgeMenu.ClearSelection();
 
                 if (!_menuOpen)

@@ -21,8 +21,10 @@ namespace FloatingMenu.Controls
     public partial class SignalSource : Page, INotifyPropertyChanged
     {
         public ObservableCollection<SignalSourceModel> Devices { get; set; }
-       
+
         public event Action<int> DeviceSelected;
+
+        private bool _isOperationInProgress = false;
       
         public SignalSource()
         {
@@ -117,9 +119,11 @@ namespace FloatingMenu.Controls
 
         private void ToggleDevice(SignalSourceModel device)
         {
+            if (_isOperationInProgress)
+                return;
+
             if (device.Status == DeviceStatusEnum.Available)
             {
-                // Disconnect any previously connected device
                 foreach (var d in Devices)
                 {
                     if (d.Status == DeviceStatusEnum.Connected)
@@ -127,15 +131,22 @@ namespace FloatingMenu.Controls
                 }
 
                 device.Status = DeviceStatusEnum.Connected;
-                
-                DeviceSelected?.Invoke(device.CameraIndex); // Open camera
+                _isOperationInProgress = true;
+
+                DeviceSelected?.Invoke(device.CameraIndex);
             }
             else if (device.Status == DeviceStatusEnum.Connected)
             {
                 device.Status = DeviceStatusEnum.Available;
+                _isOperationInProgress = true;
 
-                DeviceSelected?.Invoke(-1); // Close camera
+                DeviceSelected?.Invoke(-1);
             }
+        }
+
+        public void ResetOperationState()
+        {
+            _isOperationInProgress = false;
         }
 
     }
