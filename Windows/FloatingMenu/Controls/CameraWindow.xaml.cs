@@ -4,7 +4,6 @@
 *******************************************************************************/
 using AForge.Video;
 using AForge.Video.DirectShow;
-using OpenCvSharp;
 using System.Windows;
 using System.Windows.Interop;
 using System.Windows.Media.Imaging;
@@ -24,8 +23,6 @@ namespace FloatingMenu.Controls
         private VideoCaptureDevice _videoSource;
         private FilterInfoCollection _videoDevices;
         private int _frameCounter = 0;
-
-
 
         public CameraWindow(int cameraIndex)
         {

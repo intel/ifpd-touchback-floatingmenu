@@ -12,7 +12,7 @@ namespace FloatingMenu.Helpers
 {
     internal static class ReadJSON
     {
-        public static (string port, string exePath) GetPortFromExternalConfig()
+        private static ConfigModel LoadConfig()
         {
             string path = Path.Combine(
                 AppDomain.CurrentDomain.BaseDirectory,
@@ -20,7 +20,7 @@ namespace FloatingMenu.Helpers
                 );
 
             if (!File.Exists(path))
-                throw new Exception("Config file not found");
+                throw new FileNotFoundException($"Config file not found at: {path}");
 
             string json = File.ReadAllText(path);
 
@@ -31,24 +31,36 @@ namespace FloatingMenu.Helpers
             }
             catch (JsonException ex)
             {
-                throw new Exception("Invalid JSON format: " + ex.Message);
+                throw new InvalidDataException($"Invalid JSON format in config file '{path}': {ex.Message}");
             }
 
             if (config == null)
-                throw new Exception("Invalid config structure");
+                throw new InvalidDataException($"Failed to deserialize config from '{path}'");
+
+            return config;
+        }
+
+        public static (string port, string exePath) GetPortFromExternalConfig()
+        {
+            ConfigModel config = LoadConfig();
 
             if (string.IsNullOrWhiteSpace(config.Port))
-                throw new Exception("Port is missing in config");
+                throw new InvalidDataException("'Port' field is missing or empty in config.json");
 
             string port = config.Port.Trim().ToUpper();
 
             if (!port.StartsWith("COM") || !int.TryParse(port.Substring(3), out _))
-                throw new Exception($"Invalid port format: {port}");
+                throw new InvalidDataException($"Invalid 'Port' format in config.json: '{config.Port}'. Expected format: 'COMx' (e.g., COM3)");
 
             var availablePorts = SerialPort.GetPortNames();
 
             if (!availablePorts.Contains(port))
-                throw new Exception($"Port '{port}' not found on this machine");
+            {
+                string availablePortsList = availablePorts.Length > 0
+                    ? string.Join(", ", availablePorts)
+                    : "None";
+                throw new InvalidOperationException($"Port '{port}' specified in config.json is not available on this machine. Available ports: {availablePortsList}");
+            }
 
             string baseDir = AppDomain.CurrentDomain.BaseDirectory;
             string externalToolsDir = Path.Combine(baseDir, "ExternalTools", "TouchDataCaptureService");
@@ -67,10 +79,25 @@ namespace FloatingMenu.Helpers
             }
             else
             {
-                throw new Exception($"Service EXE not found in:\n{releaseExePath}\nor\n{debugExePath}");
+                throw new FileNotFoundException($"Service EXE not found. Checked paths:\n{releaseExePath}\nor\n{debugExePath}");
             }
 
             return (port, exePath);
+        }
+
+        public static string GetAnnotationAppPath()
+        {
+            ConfigModel config = LoadConfig();
+
+            if (string.IsNullOrWhiteSpace(config.AnnotationAppPath))
+                return null;
+
+            string appPath = config.AnnotationAppPath.Trim();
+
+            if (!File.Exists(appPath))
+                throw new FileNotFoundException($"Annotation app executable not found at path specified in config.json: '{appPath}'");
+
+            return appPath;
         }
 
     }
@@ -78,5 +105,6 @@ namespace FloatingMenu.Helpers
     public class ConfigModel
     {
         public string Port { get; set; }
+        public string AnnotationAppPath { get; set; }
     }
 }

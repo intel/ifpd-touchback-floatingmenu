@@ -25,9 +25,6 @@
     <PackageReference Include="AForge" Version="2.2.5" />
     <PackageReference Include="AForge.Video" Version="2.2.5" />
     <PackageReference Include="AForge.Video.DirectShow" Version="2.2.5" />
-    <PackageReference Include="OpenCvSharp4" Version="4.13.0.20260302" />
-    <PackageReference Include="OpenCvSharp4.runtime.win" Version="4.13.0.20260302" />
-    <PackageReference Include="OpenCvSharp4.WpfExtensions" Version="4.13.0.20260302" />
     <PackageReference Include="System.IO.Ports" Version="10.0.5" />
   </ItemGroup>
 
@@ -40,9 +37,7 @@
 
 		<MakeDir Directories="$(MSBuildThisFileDirectory)..\ExternalTools\TouchDataCaptureService" />
 
-		<Copy SourceFiles="$(MSBuildThisFileDirectory)..\GetTouchInfo\bin\Release\Publish\TouchDataCaptureService.exe"
-			  DestinationFolder="$(MSBuildThisFileDirectory)..\ExternalTools\TouchDataCaptureService"
-			  SkipUnchangedFiles="true" />
+		<Copy SourceFiles="$(MSBuildThisFileDirectory)..\GetTouchInfo\bin\Release\Publish\TouchDataCaptureService.exe" DestinationFolder="$(MSBuildThisFileDirectory)..\ExternalTools\TouchDataCaptureService" SkipUnchangedFiles="true" />
 
 		<Message Text="Copied TouchDataCaptureService.exe to $(MSBuildThisFileDirectory)..\ExternalTools\TouchDataCaptureService" Importance="high" />
 

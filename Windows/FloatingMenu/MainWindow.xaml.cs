@@ -46,7 +46,7 @@ namespace FloatingMenu
             _signalSourcePage = new SignalSource();
            
             _signalSourcePage.DeviceSelected += OpenCameraWindow;
-            // this.LocationChanged += MainWindow_LocationChanged;
+            this.Unloaded += (s, e) => CloseCameraWindow();
         }
 
         private void ToggleMenu()
@@ -366,7 +366,20 @@ namespace FloatingMenu
         {
             try
             {
-                string exePath = @"C:\Program Files\WindowsApps\19566Hanakiansoftware.ScreenPaint_1.3.3.0_x64__y1w6xw98tx1ba\DesktopDrawing\ScreenPaint.exe";
+                string exePath = Helpers.ReadJSON.GetAnnotationAppPath();
+
+                if (exePath == null)
+                {
+                    MessageBox.Show(
+                        "Annotation app is not configured.\n\n" +
+                        "To enable this feature, add the full path to your annotation app executable in config.json:\n\n" +
+                        "\"AnnotationAppPath\": \"C:\\\\path\\\\to\\\\your\\\\app.exe\"",
+                        "Configuration Required",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Information);
+                    return;
+                }
+
                 //string exePath = System.IO.Path.Combine(
                 //    AppDomain.CurrentDomain.BaseDirectory,
                 //    "ppInk",
