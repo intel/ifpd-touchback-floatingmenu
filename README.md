@@ -1,4 +1,4 @@
-# IFPD Features : Touch-back and Floating-menu/annotation-tool 
+# IFPD : Touch-back and Floating-menu/annotation-tool 
 
 [![.NET](https://img.shields.io/badge/.NET-10-512BD4)](https://dotnet.microsoft.com/)
 [![ESP32-S3](https://img.shields.io/badge/ESP32-S3-E7352C)](https://www.espressif.com/en/products/socs/esp32-s3)
