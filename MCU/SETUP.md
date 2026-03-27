@@ -48,22 +48,28 @@ This software runs on an ESP32-S3 MCU which receives touch data from IFPD over U
    - Navigate to: `Component config → TinyUSB Stack → Human Interface Device Class (HID)`
    - Set `CONFIG_TINYUSB_HID_COUNT` = `1`
 
-3. **Configure Serial Monitor**
-   - Navigate to: `Serial flasher config`
-   - Set `CONFIG_ESPTOOLPY_MONITOR_BAUD` = `2000000`
-
-4. **Save and Exit**
+3. **Save and Exit**
    - Press `S` to save
    - Press `Q` to quit
 
 ### Option 2: Manual Configuration
 
-Edit `sdkconfig` directly and add/modify these lines:
+Edit `sdkconfig` directly and add/modify this line:
 
 ```ini
 CONFIG_TINYUSB_HID_COUNT=1
-CONFIG_ESPTOOLPY_MONITOR_BAUD=2000000
 ```
+
+### Configure Flash Baud Rate
+
+To set the flash baud rate to 3 Mbaud:
+
+1. Go to **File → Preferences → Settings**
+2. Navigate to **Extensions → ESP-IDF**
+3. Find **Flash Baud Rate**
+4. Set the value to `3000000`
+
+**Note:** This setting must match the baud rate configured in the Touch Data Capture Service (3 Mbaud).
 
 ## Building
 
@@ -121,6 +127,12 @@ build/
  - Reinstall ESP-IDF extension
  - Verify ESP-IDF installation path in extension settings
  - Check that Python virtual environment is activated
+
+### Network Related Issues
+ - If you encounter network errors during setup or building:
+   - Disable VPN and try again
+   - Check firewall settings
+   - Verify internet connection is stable
 
 ## Next Steps
 Once the build completes successfully, proceed to [DEPLOYMENT.md](DEPLOYMENT.md) for instructions on flashing and running the firmware on your ESP32-S3 device.

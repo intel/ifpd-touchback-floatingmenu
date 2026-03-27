@@ -10,6 +10,7 @@ MCU
 ## Features
 
 - **USB HID Digitizer**: 10-finger multi-touch support
+- **Gesture Support**: Supports touch gestures
 - **High-speed UART**: 3 Mbaud input from IFPD
 - **Low latency**: Optimized dual-task architecture
 - **Standards compliant**: Windows Precision Touchpad compatible
@@ -37,6 +38,8 @@ See the "Production Deployment" section in [DEPLOYMENT.md](DEPLOYMENT.md).
 - ESP32-S3 development board (with USB-OTG support)
 - USB cable (data-capable)
 - UART connection from IFPD (3 Mbaud, 8N1)
+
+**Important:** The baud rate configured in this firmware must match the baud rate in the Touch Data Capture Service. The maximum supported baud rate is 3,000,000 (3 Mbaud). Exceeding this limit may cause exceptions during serial communication.
 
 ## Project Structure
 
